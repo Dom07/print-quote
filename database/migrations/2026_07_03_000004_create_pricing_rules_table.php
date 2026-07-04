@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\RateType;
 
 return new class extends Migration
 {
@@ -15,11 +16,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pricing_item_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->string('applies_to')->nullable()->after('name');
             $table->decimal('min_value', 12, 4)->nullable();
             $table->decimal('max_value', 12, 4)->nullable();
             $table->decimal('rate', 12, 4);
             $table->string('unit')->nullable();
-            $table->string('rate_type')->default('per_sheet');
+            $table->string('rate_type')->default(RateType::PerSheet->value);
             $table->unsignedInteger('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();

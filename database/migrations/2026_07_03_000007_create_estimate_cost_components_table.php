@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\RateType;
 
 return new class extends Migration
 {
@@ -19,7 +20,7 @@ return new class extends Migration
             $table->string('unit')->nullable();
             $table->decimal('rate', 12, 4)->nullable();
             $table->decimal('original_rate', 12, 4)->nullable();
-            $table->string('rate_type')->default('per_sheet');
+            $table->string('rate_type')->default(RateType::PerSheet->value);
             $table->boolean('is_overridden')->default(false);
             $table->text('calculation_note')->nullable();
             $table->text('override_note')->nullable();

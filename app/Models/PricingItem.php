@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\RateType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -34,6 +35,7 @@ class PricingItem extends Model
     {
         return [
             'rate' => 'decimal:4',
+            'rate_type' => RateType::class,
             'is_selectable' => 'boolean',
             'is_active' => 'boolean',
         ];
