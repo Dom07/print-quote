@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pricing_item_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('applies_to')->nullable()->after('name');
+            $table->string('applies_to')->nullable();
             $table->decimal('min_value', 12, 4)->nullable();
             $table->decimal('max_value', 12, 4)->nullable();
             $table->decimal('rate', 12, 4);
