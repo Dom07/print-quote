@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\RateType;
 use App\Enums\EstimateStatus;
 
 return new class extends Migration
@@ -18,7 +17,6 @@ return new class extends Migration
             $table->foreignId('customer_id')->nullable()->constrained()->nullOnDelete();
             $table->string('status')->default(EstimateStatus::Draft->value);
             $table->string('title')->nullable();
-            $table->unsignedInteger('quantity')->nullable();
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

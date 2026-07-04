@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedInteger('production_sheets')->nullable();
             $table->unsignedInteger('wastage_sheets')->nullable();
             $table->unsignedInteger('total_sheets_with_wastage')->nullable();
+            $table->unsignedInteger('sheets_used_for_process')->nullable();
             $table->json('raw_inputs')->nullable();
             $table->timestamps();
         });
