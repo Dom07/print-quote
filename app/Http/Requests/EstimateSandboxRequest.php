@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\PricingItem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class EstimateSandboxRequest extends FormRequest
 {
@@ -96,6 +97,30 @@ class EstimateSandboxRequest extends FormRequest
             'spot_uv_pricing_item_id' => 'UV type',
             'needs_drip_off' => 'need drip off',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if (! $this->filled('no_of_sheets_to_process')) {
+                return;
+            }
+
+            if ((int) $this->input('no_of_sheets_to_process') !== 0) {
+                return;
+            }
+
+            if (! $this->boolean('needs_lamination')
+                && ! $this->boolean('needs_spot_uv')
+                && ! $this->boolean('needs_drip_off')) {
+                return;
+            }
+
+            $validator->errors()->add(
+                'no_of_sheets_to_process',
+                'No. of sheets to process must be greater than 0 when a process option is selected.'
+            );
+        });
     }
 
     private function pricingItemRule(string $categorySlug, array $allowedNames = []): callable

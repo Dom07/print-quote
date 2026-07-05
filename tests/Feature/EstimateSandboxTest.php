@@ -397,6 +397,71 @@ test('estimate sandbox allows missing foiling cost', function () {
         ->assertDontSee('₹625.2500');
 });
 
+test('estimate sandbox requires no of sheets to process', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $payload = validSandboxPayload($paperItem, $interestItem);
+    unset($payload['no_of_sheets_to_process']);
+
+    $this->post('/estimate-sandbox', $payload)
+        ->assertSessionHasErrors([
+            'no_of_sheets_to_process',
+        ]);
+});
+
+test('estimate sandbox allows zero sheets to process when process sections are off', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'no_of_sheets_to_process' => 0,
+        'needs_lamination' => 0,
+        'needs_spot_uv' => 0,
+        'needs_drip_off' => 0,
+    ]))
+        ->assertOk()
+        ->assertSee('KG for Sheets To Process')
+        ->assertSee('0.0000');
+});
+
+test('estimate sandbox rejects zero sheets to process when lamination is selected', function () {
+    [$paperItem, $interestItem, , , $bopp] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'no_of_sheets_to_process' => 0,
+        'needs_lamination' => 1,
+        'lamination_mode' => 'front_only',
+        'lamination_front_pricing_item_id' => $bopp->id,
+    ]))
+        ->assertSessionHasErrors([
+            'no_of_sheets_to_process',
+        ]);
+});
+
+test('estimate sandbox rejects zero sheets to process when spot uv is selected', function () {
+    [$paperItem, $interestItem, , , , , $spotUv] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'no_of_sheets_to_process' => 0,
+        'needs_spot_uv' => 1,
+        'spot_uv_pricing_item_id' => $spotUv->id,
+    ]))
+        ->assertSessionHasErrors([
+            'no_of_sheets_to_process',
+        ]);
+});
+
+test('estimate sandbox rejects zero sheets to process when drip off is selected', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'no_of_sheets_to_process' => 0,
+        'needs_drip_off' => 1,
+    ]))
+        ->assertSessionHasErrors([
+            'no_of_sheets_to_process',
+        ]);
+});
+
 test('estimate sandbox validates missing back side lamination for both sides mode', function () {
     [$paperItem, $interestItem, , , $bopp] = seedSandboxPricingItems();
 

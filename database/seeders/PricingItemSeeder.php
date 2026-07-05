@@ -36,7 +36,7 @@ class PricingItemSeeder extends Seeder
             ['lamination', 'Gloss Lamination', 'gloss-lamination', null, 'coefficient', RateType::FormulaCoefficient, true],
             ['spot-uv', 'Spot UV', 'spot-uv', null, 'sheet', RateType::PerSheet, true],
             ['spot-uv', 'Raised UV', 'raised-uv', null, 'sheet', RateType::PerSheet, true],
-            ['drip-off', 'Drip Off Coefficient', 'drip-off-coefficient', '0.7500', 'coefficient', RateType::FormulaCoefficient, true],
+            ['drip-off', 'Drip Off Coefficient', 'drip-off-coefficient', '0.7500', 'coefficient', RateType::FormulaCoefficient, false],
             ['drip-off', 'Drip Off Minimum Charge', 'drip-off-minimum-charge', '2500.0000', 'job', RateType::MinimumFlat, false],
             ['drip-off', 'Drip Off Setup Charge', 'drip-off-setup-charge', '1300.0000', 'job', RateType::Flat, false],
             ['foiling', 'Foiling Cost', 'foiling-cost', null, 'sheet', RateType::PerSheet, true],
