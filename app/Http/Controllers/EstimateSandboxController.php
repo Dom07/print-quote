@@ -10,6 +10,7 @@ use App\Services\Estimates\PaperPricingCalculator;
 use App\Services\Estimates\PaperWeightCalculator;
 use App\Services\Estimates\PunchingRateResolver;
 use App\Services\Estimates\SpotUvCalculator;
+use App\Services\Estimates\TotalPricePerSheetCalculator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\View\View;
 
@@ -34,6 +35,7 @@ class EstimateSandboxController extends Controller
         LaminationCalculator $laminationCalculator,
         SpotUvCalculator $spotUvCalculator,
         DripOffCalculator $dripOffCalculator,
+        TotalPricePerSheetCalculator $totalPricePerSheetCalculator,
     ): View {
         $validated = $request->validated();
 
@@ -61,6 +63,51 @@ class EstimateSandboxController extends Controller
         $selectedSpotUvItem = $needsSpotUv && isset($validated['spot_uv_pricing_item_id'])
             ? PricingItem::findOrFail($validated['spot_uv_pricing_item_id'])
             : null;
+        $paperPricingResult = $pricingCalculator->calculate(
+            selectedPaperRate: (float) $selectedPaperItem->rate,
+            interestPercentage: (float) $selectedInterestItem->rate,
+            kgsOfOrder: $kgResult['no_of_sheets_with_wastage'],
+            noOfSheets: (int) $validated['no_of_sheets'],
+        );
+        $punchingRateResult = $needsPunching
+            ? $punchingRateResolver->resolve(
+                pricingItem: $selectedPunchingItem,
+                quantity: (int) $validated['no_of_sheets'],
+            )
+            : null;
+        $laminationResult = $needsLamination
+            ? $laminationCalculator->calculate(
+                mode: $validated['lamination_mode'],
+                frontPricingItem: $selectedFrontLaminationItem,
+                backPricingItem: $selectedBackLaminationItem,
+                quantity: (int) $validated['no_of_sheets_to_process'],
+                length: (float) $validated['length'],
+                width: (float) $validated['width'],
+            )
+            : null;
+        $spotUvResult = $needsSpotUv
+            ? $spotUvCalculator->calculate(
+                pricingItem: $selectedSpotUvItem,
+                quantity: (int) $validated['no_of_sheets_to_process'],
+            )
+            : null;
+        $dripOffResult = $needsDripOff
+            ? $dripOffCalculator->calculate(
+                length: (float) $validated['length'],
+                width: (float) $validated['width'],
+                quantity: (int) $validated['no_of_sheets_to_process'],
+            )
+            : null;
+        $totalPricePerSheetResult = $totalPricePerSheetCalculator->calculate(
+            paperPricePerSheet: $paperPricingResult['price_per_sheet'],
+            printingCost: (float) $validated['printing_cost'],
+            inkCost: (float) $validated['ink_cost'],
+            foilingCost: isset($validated['foiling_cost']) ? (float) $validated['foiling_cost'] : null,
+            punchingRate: $punchingRateResult['rate'] ?? null,
+            laminationValue: $laminationResult['combined_value'] ?? null,
+            spotUvValue: $spotUvResult['value'] ?? null,
+            dripOffRate: $dripOffResult['final_rate_per_sheet'] ?? null,
+        );
 
         return view('estimate-sandbox', [
             'input' => $validated,
@@ -70,47 +117,18 @@ class EstimateSandboxController extends Controller
             'laminationOptions' => $this->pricingOptions('lamination', ['BOPP Lamination', 'Matte Lamination']),
             'spotUvOptions' => $this->pricingOptions('spot-uv', ['Spot UV', 'Raised UV']),
             'result' => $kgResult,
-            'paperPricingResult' => $pricingCalculator->calculate(
-                selectedPaperRate: (float) $selectedPaperItem->rate,
-                interestPercentage: (float) $selectedInterestItem->rate,
-                kgsOfOrder: $kgResult['no_of_sheets_with_wastage'],
-                noOfSheets: (int) $validated['no_of_sheets'],
-            ),
+            'paperPricingResult' => $paperPricingResult,
             'selectedPaperItem' => $selectedPaperItem,
             'selectedInterestItem' => $selectedInterestItem,
             'selectedPunchingItem' => $selectedPunchingItem,
             'selectedFrontLaminationItem' => $selectedFrontLaminationItem,
             'selectedBackLaminationItem' => $selectedBackLaminationItem,
             'selectedSpotUvItem' => $selectedSpotUvItem,
-            'punchingRateResult' => $needsPunching
-                ? $punchingRateResolver->resolve(
-                    pricingItem: $selectedPunchingItem,
-                    quantity: (int) $validated['no_of_sheets'],
-                )
-                : null,
-            'laminationResult' => $needsLamination
-                ? $laminationCalculator->calculate(
-                    mode: $validated['lamination_mode'],
-                    frontPricingItem: $selectedFrontLaminationItem,
-                    backPricingItem: $selectedBackLaminationItem,
-                    quantity: (int) $validated['no_of_sheets_to_process'],
-                    length: (float) $validated['length'],
-                    width: (float) $validated['width'],
-                )
-                : null,
-            'spotUvResult' => $needsSpotUv
-                ? $spotUvCalculator->calculate(
-                    pricingItem: $selectedSpotUvItem,
-                    quantity: (int) $validated['no_of_sheets_to_process'],
-                )
-                : null,
-            'dripOffResult' => $needsDripOff
-                ? $dripOffCalculator->calculate(
-                    length: (float) $validated['length'],
-                    width: (float) $validated['width'],
-                    quantity: (int) $validated['no_of_sheets_to_process'],
-                )
-                : null,
+            'punchingRateResult' => $punchingRateResult,
+            'laminationResult' => $laminationResult,
+            'spotUvResult' => $spotUvResult,
+            'dripOffResult' => $dripOffResult,
+            'totalPricePerSheetResult' => $totalPricePerSheetResult,
         ]);
     }
 

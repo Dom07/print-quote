@@ -15,6 +15,7 @@
         $laminationResult = $laminationResult ?? null;
         $spotUvResult = $spotUvResult ?? null;
         $dripOffResult = $dripOffResult ?? null;
+        $totalPricePerSheetResult = $totalPricePerSheetResult ?? null;
         $selectedPunchingItem = $selectedPunchingItem ?? null;
         $selectedFrontLaminationItem = $selectedFrontLaminationItem ?? null;
         $selectedBackLaminationItem = $selectedBackLaminationItem ?? null;
@@ -549,6 +550,57 @@
                                 </div>
                             @endif
                         </div>
+
+                        @if ($totalPricePerSheetResult !== null)
+                            <h3 class="result-section-title">Total Price Per Sheet</h3>
+
+                            <div class="result-stack">
+                                <div class="result-item">
+                                    <span class="result-label">Paper Price Per Sheet</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['paper_price_per_sheet'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Printing Cost</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['printing_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Ink Cost</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['ink_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Foiling Cost</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['foiling_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Punching Rate</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['punching_rate'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Lamination Value</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['lamination_value'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Spot UV Value</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['spot_uv_value'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Drip Off Rate</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['drip_off_rate'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item result-item--total">
+                                    <span class="result-label">Total Price Per Sheet</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['total_price_per_sheet'] ?? null) }}</span>
+                                </div>
+                            </div>
+                        @endif
 
                         <p class="result-note">Temporary paper weight calculation only. No values are saved.</p>
                     </div>

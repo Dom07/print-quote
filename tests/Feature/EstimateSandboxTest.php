@@ -97,6 +97,13 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('No Spot UV')
         ->assertSee('Drip Off')
         ->assertSee('No Drip Off')
+        ->assertSee('Total Price Per Sheet')
+        ->assertSee('Paper Price Per Sheet')
+        ->assertSee('Punching Rate')
+        ->assertSee('Lamination Value')
+        ->assertSee('Drip Off Rate')
+        ->assertSee('₹0.0000')
+        ->assertSee('₹3,502.5392')
         ->assertSee('Temporary paper weight calculation only. No values are saved.');
 });
 
@@ -119,7 +126,9 @@ test('estimate sandbox previews drip off when base cost exceeds minimum', functi
         ->assertSee('Flat Add-On Rate Per Sheet')
         ->assertSee('₹1.3000')
         ->assertSee('Final Drip Off Rate Per Sheet')
-        ->assertSee('₹5.8000');
+        ->assertSee('₹5.8000')
+        ->assertSee('Drip Off Rate')
+        ->assertSee('₹3,508.3392');
 });
 
 test('estimate sandbox previews drip off when minimum applies', function () {
@@ -137,7 +146,9 @@ test('estimate sandbox previews drip off when minimum applies', function () {
         ->assertSee('Minimum Adjusted Base Rate Per Sheet')
         ->assertSee('₹2.5000')
         ->assertSee('Final Drip Off Rate Per Sheet')
-        ->assertSee('₹3.8000');
+        ->assertSee('₹3.8000')
+        ->assertSee('Drip Off Rate')
+        ->assertSee('₹3,504.8482');
 });
 
 test('estimate sandbox previews spot uv at exact threshold', function () {
@@ -155,7 +166,9 @@ test('estimate sandbox previews spot uv at exact threshold', function () {
         ->assertSee('1000')
         ->assertSee('Minimum / Quantity')
         ->assertSee('₹1,250.0000')
-        ->assertSee('₹1.2500');
+        ->assertSee('₹1.2500')
+        ->assertSee('Spot UV Value')
+        ->assertSee('₹3,503.7892');
 });
 
 test('estimate sandbox previews spot uv above threshold', function () {
@@ -168,7 +181,9 @@ test('estimate sandbox previews spot uv above threshold', function () {
     ]))
         ->assertOk()
         ->assertSee('Per Sheet')
-        ->assertSee('₹1.2500');
+        ->assertSee('₹1.2500')
+        ->assertSee('Spot UV Value')
+        ->assertSee('₹3,503.7892');
 });
 
 test('estimate sandbox previews raised uv at exact threshold', function () {
@@ -218,7 +233,9 @@ test('estimate sandbox previews one side bopp lamination at lower threshold', fu
         ->assertSee('BOPP Lamination')
         ->assertSee('0.3700')
         ->assertSee('₹2.2200')
-        ->assertSee('Combined Lamination Value');
+        ->assertSee('Combined Lamination Value')
+        ->assertSee('Lamination Value')
+        ->assertSee('₹3,504.7592');
 });
 
 test('estimate sandbox previews one side bopp lamination above threshold', function () {
@@ -269,7 +286,9 @@ test('estimate sandbox resolves standard punching rate at two thousand sheets', 
         ->assertOk()
         ->assertSee('Punching')
         ->assertSee('Standard Punching')
-        ->assertSee('₹1.0000');
+        ->assertSee('₹1.0000')
+        ->assertSee('Punching Rate')
+        ->assertSee('₹3,502.6446');
 });
 
 test('estimate sandbox resolves standard punching rate above two thousand sheets', function () {
@@ -394,6 +413,9 @@ test('estimate sandbox allows missing foiling cost', function () {
         ->assertSee('Manual Costs')
         ->assertSee('Printing Cost')
         ->assertSee('Ink Cost')
+        ->assertSee('Foiling Cost')
+        ->assertSee('₹0.0000')
+        ->assertSee('₹2,877.2892')
         ->assertDontSee('₹625.2500');
 });
 
