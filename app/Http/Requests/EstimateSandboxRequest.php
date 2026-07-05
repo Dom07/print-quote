@@ -22,6 +22,10 @@ class EstimateSandboxRequest extends FormRequest
             'no_of_sheets' => ['required', 'numeric', 'integer', 'min:1'],
             'no_of_sheets_with_wastage' => ['required', 'numeric', 'integer', 'min:0'],
             'no_of_sheets_to_process' => ['required', 'numeric', 'integer', 'min:0'],
+            'printing_cost' => ['required', 'numeric', 'min:0'],
+            'ink_cost' => ['required', 'numeric', 'min:0'],
+            'foiling_cost' => ['nullable', 'numeric', 'min:0'],
+            'needs_punching' => ['required', 'boolean'],
             'paper_pricing_item_id' => [
                 'required',
                 Rule::exists('pricing_items', 'id'),
@@ -32,6 +36,39 @@ class EstimateSandboxRequest extends FormRequest
                 Rule::exists('pricing_items', 'id'),
                 $this->pricingItemRule('interest-slabs'),
             ],
+            'punching_pricing_item_id' => [
+                'nullable',
+                'required_if:needs_punching,1',
+                Rule::exists('pricing_items', 'id'),
+                $this->pricingItemRule('punching'),
+            ],
+            'needs_lamination' => ['required', 'boolean'],
+            'lamination_mode' => [
+                'nullable',
+                'required_if:needs_lamination,1',
+                Rule::in(['front_only', 'both_sides']),
+            ],
+            'lamination_front_pricing_item_id' => [
+                'nullable',
+                'required_if:needs_lamination,1',
+                Rule::exists('pricing_items', 'id'),
+                $this->pricingItemRule('lamination', ['BOPP Lamination', 'Matte Lamination']),
+            ],
+            'lamination_back_pricing_item_id' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->boolean('needs_lamination')
+                    && $this->input('lamination_mode') === 'both_sides'),
+                Rule::exists('pricing_items', 'id'),
+                $this->pricingItemRule('lamination', ['BOPP Lamination', 'Matte Lamination']),
+            ],
+            'needs_spot_uv' => ['required', 'boolean'],
+            'spot_uv_pricing_item_id' => [
+                'nullable',
+                'required_if:needs_spot_uv,1',
+                Rule::exists('pricing_items', 'id'),
+                $this->pricingItemRule('spot-uv', ['Spot UV', 'Raised UV']),
+            ],
+            'needs_drip_off' => ['required', 'boolean'],
         ];
     }
 
@@ -44,15 +81,27 @@ class EstimateSandboxRequest extends FormRequest
             'no_of_sheets' => 'no. of sheets',
             'no_of_sheets_with_wastage' => 'no. of sheets with wastage',
             'no_of_sheets_to_process' => 'no. of sheets to process',
+            'printing_cost' => 'printing cost',
+            'ink_cost' => 'ink cost',
+            'foiling_cost' => 'foiling cost',
+            'needs_punching' => 'need punching',
             'paper_pricing_item_id' => 'paper rate',
             'interest_pricing_item_id' => 'interest slab',
+            'punching_pricing_item_id' => 'punching type',
+            'needs_lamination' => 'need lamination',
+            'lamination_mode' => 'lamination coverage',
+            'lamination_front_pricing_item_id' => 'front side lamination type',
+            'lamination_back_pricing_item_id' => 'back side lamination type',
+            'needs_spot_uv' => 'need spot UV',
+            'spot_uv_pricing_item_id' => 'UV type',
+            'needs_drip_off' => 'need drip off',
         ];
     }
 
-    private function pricingItemRule(string $categorySlug): callable
+    private function pricingItemRule(string $categorySlug, array $allowedNames = []): callable
     {
-        return function (string $attribute, mixed $value, callable $fail) use ($categorySlug): void {
-            if (! PricingItem::query()
+        return function (string $attribute, mixed $value, callable $fail) use ($categorySlug, $allowedNames): void {
+            $query = PricingItem::query()
                 ->whereKey($value)
                 ->where('is_active', true)
                 ->where('is_selectable', true)
@@ -60,8 +109,13 @@ class EstimateSandboxRequest extends FormRequest
                     $query
                         ->where('slug', $categorySlug)
                         ->where('is_active', true);
-                })
-                ->exists()) {
+                });
+
+            if ($allowedNames !== []) {
+                $query->whereIn('name', $allowedNames);
+            }
+
+            if (! $query->exists()) {
                 $fail('The selected :attribute is invalid.');
             }
         };

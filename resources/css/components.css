@@ -227,6 +227,10 @@ select.form-input {
     color: var(--color-success);
 }
 
+.is-hidden {
+    display: none !important;
+}
+
 @media (max-width: 760px) {
     .app-shell {
         width: min(100% - 24px, 1120px);

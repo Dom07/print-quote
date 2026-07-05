@@ -10,6 +10,7 @@ These rules capture the working conventions established while building the print
 - Do not create or modify database tables unless the current task explicitly requires it.
 - Do not write estimate records unless the current task explicitly requires persistence.
 - Prefer readable, boring code over clever code.
+- Avoid broad refactors unless the current task explicitly asks for them.
 
 ## Laravel Structure
 
@@ -76,4 +77,3 @@ These rules capture the working conventions established while building the print
   - formulas or services touched
   - tests run and results
   - confirmation of anything intentionally not changed, such as database writes or formulas
-  - Avoid broad refactors unless the current task explicitly asks for them.

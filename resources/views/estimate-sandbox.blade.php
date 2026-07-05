@@ -11,14 +11,37 @@
         $input = $input ?? [];
         $result = $result ?? null;
         $paperPricingResult = $paperPricingResult ?? null;
+        $punchingRateResult = $punchingRateResult ?? null;
+        $laminationResult = $laminationResult ?? null;
+        $spotUvResult = $spotUvResult ?? null;
+        $dripOffResult = $dripOffResult ?? null;
+        $selectedPunchingItem = $selectedPunchingItem ?? null;
+        $selectedFrontLaminationItem = $selectedFrontLaminationItem ?? null;
+        $selectedBackLaminationItem = $selectedBackLaminationItem ?? null;
+        $selectedSpotUvItem = $selectedSpotUvItem ?? null;
         $paperOptions = $paperOptions ?? collect();
         $interestOptions = $interestOptions ?? collect();
+        $punchingOptions = $punchingOptions ?? collect();
+        $laminationOptions = $laminationOptions ?? collect();
+        $spotUvOptions = $spotUvOptions ?? collect();
 
         $fieldValue = fn (string $field) => old($field, $input[$field] ?? '');
         $formatKg = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
         $formatMoney = fn (?float $value) => $value === null ? '-' : '₹'.number_format($value, 4);
         $formatPercent = fn (?float $value) => $value === null ? '-' : number_format($value, 4).'%';
+        $formatDecimal = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
         $formatDropdownPercent = fn (float $value) => rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.').'%';
+        $laminationMode = fn (?string $mode) => match ($mode) {
+            'front_only' => 'Front Only',
+            'both_sides' => 'Both Sides',
+            default => 'No Lamination',
+        };
+        $needsPunching = (string) $fieldValue('needs_punching') === '1';
+        $needsLamination = (string) $fieldValue('needs_lamination') === '1';
+        $needsSpotUv = (string) $fieldValue('needs_spot_uv') === '1';
+        $needsDripOff = (string) $fieldValue('needs_drip_off') === '1';
+        $showLaminationBackSide = $needsLamination && $fieldValue('lamination_mode') === 'both_sides';
+        $spotUvCalculationType = fn (?string $type) => $type === 'minimum_divided_by_quantity' ? 'Minimum / Quantity' : 'Per Sheet';
     @endphp
 
     <main class="app-page estimate-sandbox-page">
@@ -112,10 +135,150 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="printing_cost">Printing Cost</label>
+                                <input class="form-input" id="printing_cost" name="printing_cost" type="number" step="any" min="0" value="{{ $fieldValue('printing_cost') }}">
+                                @error('printing_cost')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="ink_cost">Ink Cost</label>
+                                <input class="form-input" id="ink_cost" name="ink_cost" type="number" step="any" min="0" value="{{ $fieldValue('ink_cost') }}">
+                                @error('ink_cost')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="foiling_cost">Foiling Cost</label>
+                                <input class="form-input" id="foiling_cost" name="foiling_cost" type="number" step="any" min="0" value="{{ $fieldValue('foiling_cost') }}">
+                                @error('foiling_cost')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="needs_punching">Need Punching?</label>
+                                <select class="form-input" id="needs_punching" name="needs_punching" data-needs-punching>
+                                    <option value="0" @selected(! $needsPunching)>No</option>
+                                    <option value="1" @selected($needsPunching)>Yes</option>
+                                </select>
+                                @error('needs_punching')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group {{ $needsPunching ? '' : 'is-hidden' }}" data-punching-details>
+                                <label class="form-label" for="punching_pricing_item_id">Punching Type</label>
+                                <select class="form-input" id="punching_pricing_item_id" name="punching_pricing_item_id">
+                                    <option value="">No Punching</option>
+                                    @foreach ($punchingOptions as $punchingOption)
+                                        <option value="{{ $punchingOption->id }}" @selected((string) $fieldValue('punching_pricing_item_id') === (string) $punchingOption->id)>
+                                            {{ $punchingOption->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('punching_pricing_item_id')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="needs_lamination">Need Lamination?</label>
+                                <select class="form-input" id="needs_lamination" name="needs_lamination" data-needs-lamination>
+                                    <option value="0" @selected(! $needsLamination)>No</option>
+                                    <option value="1" @selected($needsLamination)>Yes</option>
+                                </select>
+                                @error('needs_lamination')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group {{ $needsLamination ? '' : 'is-hidden' }}" data-lamination-details>
+                                <label class="form-label" for="lamination_mode">Lamination Coverage</label>
+                                <select class="form-input" id="lamination_mode" name="lamination_mode" data-lamination-mode>
+                                    <option value="">Select coverage</option>
+                                    <option value="front_only" @selected($fieldValue('lamination_mode') === 'front_only')>Front Only</option>
+                                    <option value="both_sides" @selected($fieldValue('lamination_mode') === 'both_sides')>Both Sides</option>
+                                </select>
+                                @error('lamination_mode')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group {{ $needsLamination ? '' : 'is-hidden' }}" data-lamination-details>
+                                <label class="form-label" for="lamination_front_pricing_item_id">Front Side Lamination Type</label>
+                                <select class="form-input" id="lamination_front_pricing_item_id" name="lamination_front_pricing_item_id">
+                                    <option value="">Select lamination</option>
+                                    @foreach ($laminationOptions as $laminationOption)
+                                        <option value="{{ $laminationOption->id }}" @selected((string) $fieldValue('lamination_front_pricing_item_id') === (string) $laminationOption->id)>
+                                            {{ $laminationOption->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('lamination_front_pricing_item_id')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group {{ $showLaminationBackSide ? '' : 'is-hidden' }}" data-lamination-back-side>
+                                <label class="form-label" for="lamination_back_pricing_item_id">Back Side Lamination Type</label>
+                                <select class="form-input" id="lamination_back_pricing_item_id" name="lamination_back_pricing_item_id">
+                                    <option value="">Select lamination</option>
+                                    @foreach ($laminationOptions as $laminationOption)
+                                        <option value="{{ $laminationOption->id }}" @selected((string) $fieldValue('lamination_back_pricing_item_id') === (string) $laminationOption->id)>
+                                            {{ $laminationOption->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('lamination_back_pricing_item_id')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="needs_spot_uv">Need Spot UV?</label>
+                                <select class="form-input" id="needs_spot_uv" name="needs_spot_uv" data-needs-spot-uv>
+                                    <option value="0" @selected(! $needsSpotUv)>No</option>
+                                    <option value="1" @selected($needsSpotUv)>Yes</option>
+                                </select>
+                                @error('needs_spot_uv')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group {{ $needsSpotUv ? '' : 'is-hidden' }}" data-spot-uv-details>
+                                <label class="form-label" for="spot_uv_pricing_item_id">UV Type</label>
+                                <select class="form-input" id="spot_uv_pricing_item_id" name="spot_uv_pricing_item_id">
+                                    <option value="">Select UV type</option>
+                                    @foreach ($spotUvOptions as $spotUvOption)
+                                        <option value="{{ $spotUvOption->id }}" @selected((string) $fieldValue('spot_uv_pricing_item_id') === (string) $spotUvOption->id)>
+                                            {{ $spotUvOption->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('spot_uv_pricing_item_id')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="needs_drip_off">Need Drip Off?</label>
+                                <select class="form-input" id="needs_drip_off" name="needs_drip_off">
+                                    <option value="0" @selected(! $needsDripOff)>No</option>
+                                    <option value="1" @selected($needsDripOff)>Yes</option>
+                                </select>
+                                @error('needs_drip_off')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
 
                         <div class="form-actions">
-                            <button class="btn btn-primary" type="submit">Calculate KG</button>
+                            <button class="btn btn-primary" type="submit">Calculate</button>
                         </div>
                     </div>
                 </form>
@@ -168,11 +331,269 @@
                             </div>
                         </div>
 
+                        @if (isset($input['printing_cost'], $input['ink_cost']))
+                            <h3 class="result-section-title">Manual Costs</h3>
+
+                            <div class="result-stack">
+                                <div class="result-item">
+                                    <span class="result-label">Printing Cost</span>
+                                    <span class="result-value">{{ $formatMoney((float) $input['printing_cost']) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Ink Cost</span>
+                                    <span class="result-value">{{ $formatMoney((float) $input['ink_cost']) }}</span>
+                                </div>
+
+                                @if (($input['foiling_cost'] ?? null) !== null)
+                                    <div class="result-item">
+                                        <span class="result-label">Foiling Cost</span>
+                                        <span class="result-value">{{ $formatMoney((float) $input['foiling_cost']) }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+
+                        <h3 class="result-section-title">Punching</h3>
+
+                        <div class="result-stack">
+                            @if (! $needsPunching)
+                                <div class="result-item">
+                                    <span class="result-label">Punching</span>
+                                    <span class="result-value">No Punching</span>
+                                </div>
+                            @else
+                                <div class="result-item">
+                                    <span class="result-label">Punching Type</span>
+                                    <span class="result-value">{{ $selectedPunchingItem?->name ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Punching Rate</span>
+                                    <span class="result-value">{{ $formatMoney($punchingRateResult['rate'] ?? null) }}</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        <h3 class="result-section-title">Lamination</h3>
+
+                        <div class="result-stack">
+                            @if ($laminationResult === null)
+                                <div class="result-item">
+                                    <span class="result-label">Lamination</span>
+                                    <span class="result-value">No Lamination</span>
+                                </div>
+                            @elseif (($laminationResult['mode'] ?? null) === 'front_only')
+                                <div class="result-item">
+                                    <span class="result-label">Lamination Mode</span>
+                                    <span class="result-value">{{ $laminationMode($laminationResult['mode']) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Selected Lamination</span>
+                                    <span class="result-value">{{ $laminationResult['front']['name'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Coefficient</span>
+                                    <span class="result-value">{{ $formatDecimal($laminationResult['front']['coefficient'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Lamination Value</span>
+                                    <span class="result-value">{{ $formatMoney($laminationResult['front']['value'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Combined Lamination Value</span>
+                                    <span class="result-value">{{ $formatMoney($laminationResult['combined_value'] ?? null) }}</span>
+                                </div>
+                            @else
+                                <div class="result-item">
+                                    <span class="result-label">Lamination Mode</span>
+                                    <span class="result-value">{{ $laminationMode($laminationResult['mode'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Front Side</span>
+                                    <span class="result-value">{{ $laminationResult['front']['name'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Front Coefficient</span>
+                                    <span class="result-value">{{ $formatDecimal($laminationResult['front']['coefficient'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Front Lamination Value</span>
+                                    <span class="result-value">{{ $formatMoney($laminationResult['front']['value'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Back Side</span>
+                                    <span class="result-value">{{ $laminationResult['back']['name'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Back Coefficient</span>
+                                    <span class="result-value">{{ $formatDecimal($laminationResult['back']['coefficient'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Back Lamination Value</span>
+                                    <span class="result-value">{{ $formatMoney($laminationResult['back']['value'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Combined Lamination Value</span>
+                                    <span class="result-value">{{ $formatMoney($laminationResult['combined_value'] ?? null) }}</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        <h3 class="result-section-title">Spot UV</h3>
+
+                        <div class="result-stack">
+                            @if (! $needsSpotUv)
+                                <div class="result-item">
+                                    <span class="result-label">Spot UV</span>
+                                    <span class="result-value">No Spot UV</span>
+                                </div>
+                            @else
+                                <div class="result-item">
+                                    <span class="result-label">UV Type</span>
+                                    <span class="result-value">{{ $selectedSpotUvItem?->name ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Quantity Used</span>
+                                    <span class="result-value">{{ $spotUvResult['quantity'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Calculation Type</span>
+                                    <span class="result-value">{{ $spotUvCalculationType($spotUvResult['calculation_type'] ?? null) }}</span>
+                                </div>
+
+                                @if (isset($spotUvResult['resolved_amount']))
+                                    <div class="result-item">
+                                        <span class="result-label">Resolved Amount</span>
+                                        <span class="result-value">{{ $formatMoney($spotUvResult['resolved_amount']) }}</span>
+                                    </div>
+                                @endif
+
+                                <div class="result-item">
+                                    <span class="result-label">Spot UV Value</span>
+                                    <span class="result-value">{{ $formatMoney($spotUvResult['value'] ?? null) }}</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        <h3 class="result-section-title">Drip Off</h3>
+
+                        <div class="result-stack">
+                            @if (! $needsDripOff)
+                                <div class="result-item">
+                                    <span class="result-label">Drip Off</span>
+                                    <span class="result-value">No Drip Off</span>
+                                </div>
+                            @else
+                                <div class="result-item">
+                                    <span class="result-label">Coefficient</span>
+                                    <span class="result-value">{{ $formatDecimal($dripOffResult['coefficient'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Quantity Used</span>
+                                    <span class="result-value">{{ $dripOffResult['quantity'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Base Rate Per Sheet</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['base_rate_per_sheet'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Base Cost</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['base_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Minimum Cost</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['minimum_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Minimum Adjusted Base Cost</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['minimum_adjusted_base_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Minimum Adjusted Base Rate Per Sheet</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['minimum_adjusted_base_rate_per_sheet'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Flat Add-On Amount</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['flat_add_on_amount'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Flat Add-On Rate Per Sheet</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['flat_add_on_rate_per_sheet'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Final Drip Off Rate Per Sheet</span>
+                                    <span class="result-value">{{ $formatMoney($dripOffResult['final_rate_per_sheet'] ?? null) }}</span>
+                                </div>
+                            @endif
+                        </div>
+
                         <p class="result-note">Temporary paper weight calculation only. No values are saved.</p>
                     </div>
                 </aside>
             </section>
         </div>
     </main>
+<script>
+    (() => {
+        const toggle = (elements, isVisible) => {
+            elements.forEach((element) => element.classList.toggle('is-hidden', !isVisible));
+        };
+
+        const needsPunching = document.querySelector('[data-needs-punching]');
+        const punchingDetails = document.querySelectorAll('[data-punching-details]');
+        const needsLamination = document.querySelector('[data-needs-lamination]');
+        const laminationMode = document.querySelector('[data-lamination-mode]');
+        const laminationDetails = document.querySelectorAll('[data-lamination-details]');
+        const laminationBackSide = document.querySelectorAll('[data-lamination-back-side]');
+        const needsSpotUv = document.querySelector('[data-needs-spot-uv]');
+        const spotUvDetails = document.querySelectorAll('[data-spot-uv-details]');
+
+        const syncPunching = () => {
+            toggle(punchingDetails, needsPunching?.value === '1');
+        };
+
+        const syncLamination = () => {
+            const isNeeded = needsLamination?.value === '1';
+            toggle(laminationDetails, isNeeded);
+            toggle(laminationBackSide, isNeeded && laminationMode?.value === 'both_sides');
+        };
+
+        const syncSpotUv = () => {
+            toggle(spotUvDetails, needsSpotUv?.value === '1');
+        };
+
+        needsPunching?.addEventListener('change', syncPunching);
+        needsLamination?.addEventListener('change', syncLamination);
+        laminationMode?.addEventListener('change', syncLamination);
+        needsSpotUv?.addEventListener('change', syncSpotUv);
+
+        syncPunching();
+        syncLamination();
+        syncSpotUv();
+    })();
+</script>
 </body>
 </html>
