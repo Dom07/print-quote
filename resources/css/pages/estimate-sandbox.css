@@ -1,0 +1,15 @@
+.estimate-sandbox-form,
+.estimate-sandbox-results {
+    overflow: hidden;
+}
+
+.estimate-sandbox-results {
+    position: sticky;
+    top: var(--space-6);
+}
+
+@media (max-width: 760px) {
+    .estimate-sandbox-results {
+        position: static;
+    }
+}
