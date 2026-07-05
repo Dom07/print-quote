@@ -10,9 +10,15 @@
     @php
         $input = $input ?? [];
         $result = $result ?? null;
+        $paperPricingResult = $paperPricingResult ?? null;
+        $paperOptions = $paperOptions ?? collect();
+        $interestOptions = $interestOptions ?? collect();
 
         $fieldValue = fn (string $field) => old($field, $input[$field] ?? '');
         $formatKg = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
+        $formatMoney = fn (?float $value) => $value === null ? '-' : '₹'.number_format($value, 4);
+        $formatPercent = fn (?float $value) => $value === null ? '-' : number_format($value, 4).'%';
+        $formatDropdownPercent = fn (float $value) => rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.').'%';
     @endphp
 
     <main class="app-page estimate-sandbox-page">
@@ -76,6 +82,36 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="paper_pricing_item_id">Paper Rate</label>
+                                <select class="form-input" id="paper_pricing_item_id" name="paper_pricing_item_id">
+                                    <option value="">Select paper rate</option>
+                                    @foreach ($paperOptions as $paperOption)
+                                        <option value="{{ $paperOption->id }}" @selected((string) $fieldValue('paper_pricing_item_id') === (string) $paperOption->id)>
+                                            {{ $paperOption->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('paper_pricing_item_id')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="interest_pricing_item_id">Interest Slab</label>
+                                <select class="form-input" id="interest_pricing_item_id" name="interest_pricing_item_id">
+                                    <option value="">Select interest slab</option>
+                                    @foreach ($interestOptions as $interestOption)
+                                        <option value="{{ $interestOption->id }}" @selected((string) $fieldValue('interest_pricing_item_id') === (string) $interestOption->id)>
+                                            {{ $formatDropdownPercent((float) $interestOption->rate) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('interest_pricing_item_id')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
 
                         <div class="form-actions">
@@ -105,6 +141,30 @@
                             <div class="result-item">
                                 <span class="result-label">KG for Sheets To Process</span>
                                 <span class="result-value">{{ $formatKg($result['no_of_sheets_to_process'] ?? null) }}</span>
+                            </div>
+                        </div>
+
+                        <h3 class="result-section-title">Paper Pricing</h3>
+
+                        <div class="result-stack">
+                            <div class="result-item">
+                                <span class="result-label">Selected Paper Rate</span>
+                                <span class="result-value">{{ $formatMoney($paperPricingResult['selected_paper_rate'] ?? null) }}</span>
+                            </div>
+
+                            <div class="result-item">
+                                <span class="result-label">Interest %</span>
+                                <span class="result-value">{{ $formatPercent($paperPricingResult['interest_percentage'] ?? null) }}</span>
+                            </div>
+
+                            <div class="result-item">
+                                <span class="result-label">Updated Paper Rate</span>
+                                <span class="result-value">{{ $formatMoney($paperPricingResult['updated_paper_rate'] ?? null) }}</span>
+                            </div>
+
+                            <div class="result-item">
+                                <span class="result-label">Price Per Sheet</span>
+                                <span class="result-value">{{ $formatMoney($paperPricingResult['price_per_sheet'] ?? null) }}</span>
                             </div>
                         </div>
 
