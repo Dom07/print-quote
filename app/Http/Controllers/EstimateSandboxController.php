@@ -8,6 +8,7 @@ use App\Services\Estimates\DripOffCalculator;
 use App\Services\Estimates\LaminationCalculator;
 use App\Services\Estimates\PaperPricingCalculator;
 use App\Services\Estimates\PaperWeightCalculator;
+use App\Services\Estimates\PiecePricingCalculator;
 use App\Services\Estimates\PunchingRateResolver;
 use App\Services\Estimates\SpotUvCalculator;
 use App\Services\Estimates\TotalPricePerSheetCalculator;
@@ -36,6 +37,7 @@ class EstimateSandboxController extends Controller
         SpotUvCalculator $spotUvCalculator,
         DripOffCalculator $dripOffCalculator,
         TotalPricePerSheetCalculator $totalPricePerSheetCalculator,
+        PiecePricingCalculator $piecePricingCalculator,
     ): View {
         $validated = $request->validated();
 
@@ -108,6 +110,11 @@ class EstimateSandboxController extends Controller
             spotUvValue: $spotUvResult['value'] ?? null,
             dripOffRate: $dripOffResult['final_rate_per_sheet'] ?? null,
         );
+        $piecePricingResult = $piecePricingCalculator->calculate(
+            noOfSheets: (int) $validated['no_of_sheets'],
+            ups: (int) $validated['ups'],
+            totalPricePerSheet: $totalPricePerSheetResult['total_price_per_sheet'],
+        );
 
         return view('estimate-sandbox', [
             'input' => $validated,
@@ -129,6 +136,7 @@ class EstimateSandboxController extends Controller
             'spotUvResult' => $spotUvResult,
             'dripOffResult' => $dripOffResult,
             'totalPricePerSheetResult' => $totalPricePerSheetResult,
+            'piecePricingResult' => $piecePricingResult,
         ]);
     }
 

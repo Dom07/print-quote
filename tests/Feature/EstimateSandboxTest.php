@@ -45,7 +45,19 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('Raised UV')
         ->assertDontSee('₹1250.0000')
         ->assertDontSee('₹2800.0000')
-        ->assertSee('Need Drip Off?');
+        ->assertSee('Need Drip Off?')
+        ->assertSee('Ups')
+        ->assertSee('Piece-Level Costs')
+        ->assertSee('These fields apply after the base price per piece is calculated.')
+        ->assertSee('Window &amp; Labor Cost', false)
+        ->assertSee('Lace Cost')
+        ->assertSee('Designing Cost')
+        ->assertSee('name="ups"', false)
+        ->assertSee('name="window_labor_cost"', false)
+        ->assertSee('name="needs_lace_cost"', false)
+        ->assertSee('name="designing_cost"', false)
+        ->assertDontSee('name="needs_window_labor_cost"', false)
+        ->assertDontSee('name="needs_designing_cost"', false);
 });
 
 test('estimate sandbox calculates paper kilograms and paper pricing for valid data', function () {
@@ -56,6 +68,7 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'width' => 30,
         'gsm' => 100,
         'no_of_sheets' => 1000,
+        'ups' => 4,
         'no_of_sheets_with_wastage' => 1100,
         'no_of_sheets_to_process' => 1200,
         'printing_cost' => 2500,
@@ -65,6 +78,9 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'needs_lamination' => 0,
         'needs_spot_uv' => 0,
         'needs_drip_off' => 0,
+        'window_labor_cost' => '',
+        'needs_lace_cost' => 0,
+        'designing_cost' => '',
         'paper_pricing_item_id' => $paperItem->id,
         'interest_pricing_item_id' => $interestItem->id,
     ])
@@ -98,6 +114,12 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Drip Off')
         ->assertSee('No Drip Off')
         ->assertSee('Total Price Per Sheet')
+        ->assertSee('Piece Pricing')
+        ->assertSee('Ups')
+        ->assertSee('Number of Pieces')
+        ->assertSee('Price Per Piece')
+        ->assertSee('4000')
+        ->assertSee('875.6348')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Punching Rate')
         ->assertSee('Lamination Value')
@@ -105,6 +127,73 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('₹0.0000')
         ->assertSee('₹3,502.5392')
         ->assertSee('Temporary paper weight calculation only. No values are saved.');
+});
+
+test('estimate sandbox validates lace cost as boolean', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_lace_cost' => 'maybe',
+    ]))
+        ->assertSessionHasErrors([
+            'needs_lace_cost',
+        ]);
+});
+
+test('estimate sandbox requires ups', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $payload = validSandboxPayload($paperItem, $interestItem);
+    unset($payload['ups']);
+
+    $this->post('/estimate-sandbox', $payload)
+        ->assertSessionHasErrors([
+            'ups',
+        ]);
+});
+
+test('estimate sandbox requires ups to be at least one', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'ups' => 0,
+    ]))
+        ->assertSessionHasErrors([
+            'ups',
+        ]);
+});
+
+test('estimate sandbox requires ups to be an integer', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'ups' => 1.5,
+    ]))
+        ->assertSessionHasErrors([
+            'ups',
+        ]);
+});
+
+test('estimate sandbox rejects negative window labor cost', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'window_labor_cost' => -1,
+    ]))
+        ->assertSessionHasErrors([
+            'window_labor_cost',
+        ]);
+});
+
+test('estimate sandbox rejects negative designing cost', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'designing_cost' => -1,
+    ]))
+        ->assertSessionHasErrors([
+            'designing_cost',
+        ]);
 });
 
 test('estimate sandbox previews drip off when base cost exceeds minimum', function () {
@@ -322,6 +411,7 @@ test('estimate sandbox returns validation errors for invalid data', function () 
         'width' => 'wide',
         'gsm' => -1,
         'no_of_sheets' => 0,
+        'ups' => 0,
         'no_of_sheets_with_wastage' => 1.5,
         'no_of_sheets_to_process' => -2,
         'printing_cost' => -1,
@@ -329,6 +419,9 @@ test('estimate sandbox returns validation errors for invalid data', function () 
         'foiling_cost' => 'foil',
         'needs_punching' => 'maybe',
         'needs_lamination' => 'maybe',
+        'window_labor_cost' => -1,
+        'needs_lace_cost' => 'maybe',
+        'designing_cost' => -1,
         'lamination_mode' => 'bad',
         'paper_pricing_item_id' => '',
         'interest_pricing_item_id' => '',
@@ -338,6 +431,7 @@ test('estimate sandbox returns validation errors for invalid data', function () 
             'width',
             'gsm',
             'no_of_sheets',
+            'ups',
             'no_of_sheets_with_wastage',
             'no_of_sheets_to_process',
             'printing_cost',
@@ -345,6 +439,9 @@ test('estimate sandbox returns validation errors for invalid data', function () 
             'foiling_cost',
             'needs_punching',
             'needs_lamination',
+            'window_labor_cost',
+            'needs_lace_cost',
+            'designing_cost',
             'needs_spot_uv',
             'needs_drip_off',
             'lamination_mode',
@@ -361,6 +458,7 @@ test('estimate sandbox validates missing pricing selections', function () {
         'width' => 30,
         'gsm' => 100,
         'no_of_sheets' => 1000,
+        'ups' => 4,
         'no_of_sheets_with_wastage' => 1100,
         'no_of_sheets_to_process' => 1200,
         'printing_cost' => 2500,
@@ -370,6 +468,9 @@ test('estimate sandbox validates missing pricing selections', function () {
         'needs_lamination' => 0,
         'needs_spot_uv' => 0,
         'needs_drip_off' => 0,
+        'window_labor_cost' => '',
+        'needs_lace_cost' => 0,
+        'designing_cost' => '',
         'paper_pricing_item_id' => '',
         'interest_pricing_item_id' => '',
     ])
@@ -387,6 +488,7 @@ test('estimate sandbox validates missing manual costs', function () {
         'width' => 30,
         'gsm' => 100,
         'no_of_sheets' => 1000,
+        'ups' => 4,
         'no_of_sheets_with_wastage' => 1100,
         'no_of_sheets_to_process' => 1200,
         'paper_pricing_item_id' => $paperItem->id,
@@ -395,6 +497,9 @@ test('estimate sandbox validates missing manual costs', function () {
         'needs_lamination' => 0,
         'needs_spot_uv' => 0,
         'needs_drip_off' => 0,
+        'window_labor_cost' => '',
+        'needs_lace_cost' => 0,
+        'designing_cost' => '',
     ])
         ->assertSessionHasErrors([
             'printing_cost',
@@ -638,6 +743,7 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'width' => 30,
         'gsm' => 100,
         'no_of_sheets' => 1000,
+        'ups' => 4,
         'no_of_sheets_with_wastage' => 1100,
         'no_of_sheets_to_process' => 1200,
         'printing_cost' => 2500,
@@ -647,6 +753,9 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'needs_lamination' => 0,
         'needs_spot_uv' => 0,
         'needs_drip_off' => 0,
+        'window_labor_cost' => '',
+        'needs_lace_cost' => 0,
+        'designing_cost' => '',
         'paper_pricing_item_id' => $paperItem->id,
         'interest_pricing_item_id' => $interestItem->id,
     ], $overrides);

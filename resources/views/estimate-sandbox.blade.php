@@ -16,6 +16,7 @@
         $spotUvResult = $spotUvResult ?? null;
         $dripOffResult = $dripOffResult ?? null;
         $totalPricePerSheetResult = $totalPricePerSheetResult ?? null;
+        $piecePricingResult = $piecePricingResult ?? null;
         $selectedPunchingItem = $selectedPunchingItem ?? null;
         $selectedFrontLaminationItem = $selectedFrontLaminationItem ?? null;
         $selectedBackLaminationItem = $selectedBackLaminationItem ?? null;
@@ -41,6 +42,7 @@
         $needsLamination = (string) $fieldValue('needs_lamination') === '1';
         $needsSpotUv = (string) $fieldValue('needs_spot_uv') === '1';
         $needsDripOff = (string) $fieldValue('needs_drip_off') === '1';
+        $needsLaceCost = (string) $fieldValue('needs_lace_cost') === '1';
         $showLaminationBackSide = $needsLamination && $fieldValue('lamination_mode') === 'both_sides';
         $spotUvCalculationType = fn (?string $type) => $type === 'minimum_divided_by_quantity' ? 'Minimum / Quantity' : 'Per Sheet';
     @endphp
@@ -90,6 +92,48 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
+
+                            <section class="form-section form-section--full" aria-labelledby="piece-level-costs-title">
+                                <div class="form-section__header">
+                                    <h2 class="form-section__title" id="piece-level-costs-title">Piece-Level Costs</h2>
+                                    <p class="form-section__subtitle">These fields apply after the base price per piece is calculated.</p>
+                                </div>
+
+                                <div class="form-section__fields">
+                                    <div class="form-group">
+                                        <label class="form-label" for="ups">Ups</label>
+                                        <input class="form-input" id="ups" name="ups" type="number" step="1" min="1" value="{{ $fieldValue('ups') }}">
+                                        @error('ups')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="window_labor_cost">Window &amp; Labor Cost</label>
+                                        <input class="form-input" id="window_labor_cost" name="window_labor_cost" type="number" step="any" min="0" value="{{ $fieldValue('window_labor_cost') }}">
+                                        @error('window_labor_cost')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-check">
+                                        <input type="hidden" name="needs_lace_cost" value="0">
+                                        <input class="form-check-input" id="needs_lace_cost" name="needs_lace_cost" type="checkbox" value="1" @checked($needsLaceCost)>
+                                        <label class="form-check-label" for="needs_lace_cost">Lace Cost</label>
+                                        @error('needs_lace_cost')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="designing_cost">Designing Cost</label>
+                                        <input class="form-input" id="designing_cost" name="designing_cost" type="number" step="any" min="0" value="{{ $fieldValue('designing_cost') }}">
+                                        @error('designing_cost')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </section>
 
                             <div class="form-group">
                                 <label class="form-label" for="no_of_sheets_with_wastage">No. of Sheets With Wastage</label>
@@ -598,6 +642,27 @@
                                 <div class="result-item result-item--total">
                                     <span class="result-label">Total Price Per Sheet</span>
                                     <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['total_price_per_sheet'] ?? null) }}</span>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if ($piecePricingResult !== null)
+                            <h3 class="result-section-title">Piece Pricing</h3>
+
+                            <div class="result-stack">
+                                <div class="result-item">
+                                    <span class="result-label">Ups</span>
+                                    <span class="result-value">{{ $piecePricingResult['ups'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Number of Pieces</span>
+                                    <span class="result-value">{{ $piecePricingResult['number_of_pieces'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Price Per Piece</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['price_per_piece'] ?? null) }}</span>
                                 </div>
                             </div>
                         @endif
