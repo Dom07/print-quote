@@ -93,7 +93,7 @@ test('estimate sandbox page loads successfully', function () {
         ->assertDontSee('₹1250.0000')
         ->assertDontSee('₹2800.0000')
         ->assertSee('Drip Off')
-        ->assertSee('Apply drip off calculation using configured drip-off rates.')
+        ->assertSee('Apply drip off based on configured drip-off rates.')
         ->assertSee('Apply Drip Off')
         ->assertSee('type="hidden" name="needs_drip_off" value="0"', false)
         ->assertSee('id="needs_drip_off" name="needs_drip_off" type="checkbox" value="1"', false)

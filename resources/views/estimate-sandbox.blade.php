@@ -268,9 +268,9 @@
 
                                         <div class="addon-card__body {{ $needsLamination ? '' : 'is-hidden' }}" data-lamination-details>
                                             <div class="addon-card__nested-grid">
-                                                <div class="form-group">
+                                                <div class="form-group addon-card__nested-grid-full">
                                                     <label class="form-label" for="lamination_mode">Lamination Coverage</label>
-                                                    <select class="form-input" id="lamination_mode" name="lamination_mode" data-lamination-mode>
+                                                    <select class="form-input" style="max-width: 275px;" id="lamination_mode" name="lamination_mode" data-lamination-mode>
                                                         <option value="">Select coverage</option>
                                                         <option value="front_only" @selected($fieldValue('lamination_mode') === 'front_only')>Front Only</option>
                                                         <option value="both_sides" @selected($fieldValue('lamination_mode') === 'both_sides')>Both Sides</option>
