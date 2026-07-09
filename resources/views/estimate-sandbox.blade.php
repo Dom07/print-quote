@@ -38,11 +38,18 @@
             'both_sides' => 'Both Sides',
             default => 'No Lamination',
         };
+        $punchCostJobTypeLabel = fn (?string $type) => match ($type) {
+            'repeat_job' => 'Repeat Job',
+            'new_job' => 'New Job',
+            default => '-',
+        };
         $needsPunching = (string) $fieldValue('needs_punching') === '1';
         $needsLamination = (string) $fieldValue('needs_lamination') === '1';
         $needsSpotUv = (string) $fieldValue('needs_spot_uv') === '1';
         $needsDripOff = (string) $fieldValue('needs_drip_off') === '1';
         $needsLaceCost = (string) $fieldValue('needs_lace_cost') === '1';
+        $punchCostJobType = $fieldValue('punch_cost_job_type');
+        $showNewJobPunchCost = $punchCostJobType === 'new_job';
         $showLaminationBackSide = $needsLamination && $fieldValue('lamination_mode') === 'both_sides';
         $spotUvCalculationType = fn (?string $type) => $type === 'minimum_divided_by_quantity' ? 'Minimum / Quantity' : 'Per Sheet';
     @endphp
@@ -92,48 +99,6 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
-
-                            <section class="form-section form-section--full" aria-labelledby="piece-level-costs-title">
-                                <div class="form-section__header">
-                                    <h2 class="form-section__title" id="piece-level-costs-title">Piece-Level Costs</h2>
-                                    <p class="form-section__subtitle">These fields apply after the base price per piece is calculated.</p>
-                                </div>
-
-                                <div class="form-section__fields">
-                                    <div class="form-group">
-                                        <label class="form-label" for="ups">Ups</label>
-                                        <input class="form-input" id="ups" name="ups" type="number" step="1" min="1" value="{{ $fieldValue('ups') }}">
-                                        @error('ups')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="form-label" for="window_labor_cost">Window &amp; Labor Cost</label>
-                                        <input class="form-input" id="window_labor_cost" name="window_labor_cost" type="number" step="any" min="0" value="{{ $fieldValue('window_labor_cost') }}">
-                                        @error('window_labor_cost')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-check">
-                                        <input type="hidden" name="needs_lace_cost" value="0">
-                                        <input class="form-check-input" id="needs_lace_cost" name="needs_lace_cost" type="checkbox" value="1" @checked($needsLaceCost)>
-                                        <label class="form-check-label" for="needs_lace_cost">Lace Cost</label>
-                                        @error('needs_lace_cost')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="form-label" for="designing_cost">Designing Cost</label>
-                                        <input class="form-input" id="designing_cost" name="designing_cost" type="number" step="any" min="0" value="{{ $fieldValue('designing_cost') }}">
-                                        @error('designing_cost')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </section>
 
                             <div class="form-group">
                                 <label class="form-label" for="no_of_sheets_with_wastage">No. of Sheets With Wastage</label>
@@ -320,6 +285,85 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
+
+                            <section class="form-section form-section--full" aria-labelledby="piece-level-costs-title">
+                                <div class="form-section__header">
+                                    <h2 class="form-section__title" id="piece-level-costs-title">Piece-Level Costs</h2>
+                                    <p class="form-section__subtitle">These fields apply after the base price per piece is calculated.</p>
+                                </div>
+
+                                <div class="form-section__fields">
+                                    <div class="form-group">
+                                        <label class="form-label" for="ups">Ups</label>
+                                        <input class="form-input" id="ups" name="ups" type="number" step="1" min="1" value="{{ $fieldValue('ups') }}">
+                                        @error('ups')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="window_labor_cost">Window &amp; Labor Cost</label>
+                                        <input class="form-input" id="window_labor_cost" name="window_labor_cost" type="number" step="any" min="0" value="{{ $fieldValue('window_labor_cost') }}">
+                                        @error('window_labor_cost')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-check">
+                                        <input type="hidden" name="needs_lace_cost" value="0">
+                                        <input class="form-check-input" id="needs_lace_cost" name="needs_lace_cost" type="checkbox" value="1" @checked($needsLaceCost)>
+                                        <label class="form-check-label" for="needs_lace_cost">Apply Lace</label>
+                                        @error('needs_lace_cost')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="designing_cost">Designing Cost</label>
+                                        <input class="form-input" id="designing_cost" name="designing_cost" type="number" step="any" min="0" value="{{ $fieldValue('designing_cost') }}">
+                                        @error('designing_cost')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="form-section form-section--full" aria-labelledby="required-piece-costs-title">
+                                <div class="form-section__header">
+                                    <h2 class="form-section__title" id="required-piece-costs-title">Required Piece Costs</h2>
+                                    <p class="form-section__subtitle">These required fields are captured for later piece cost calculation.</p>
+                                </div>
+
+                                <div class="form-section__fields">
+                                    <div class="form-group">
+                                        <label class="form-label" for="punch_cost_job_type">Job Type</label>
+                                        <select class="form-input" id="punch_cost_job_type" name="punch_cost_job_type" data-punch-cost-job-type>
+                                            <option value="">Select job type</option>
+                                            <option value="repeat_job" @selected($punchCostJobType === 'repeat_job')>Repeat Job</option>
+                                            <option value="new_job" @selected($punchCostJobType === 'new_job')>New Job</option>
+                                        </select>
+                                        @error('punch_cost_job_type')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group {{ $showNewJobPunchCost ? '' : 'is-hidden' }}" data-new-job-punch-cost>
+                                        <label class="form-label" for="new_job_punch_cost">New Job Punch Cost</label>
+                                        <input class="form-input" id="new_job_punch_cost" name="new_job_punch_cost" type="number" step="any" min="0" value="{{ $fieldValue('new_job_punch_cost') }}">
+                                        @error('new_job_punch_cost')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="expenses">Expenses</label>
+                                        <input class="form-input" id="expenses" name="expenses" type="number" step="any" min="0" value="{{ $fieldValue('expenses') }}">
+                                        @error('expenses')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </section>
                         </div>
 
                         <div class="form-actions">
@@ -661,8 +705,58 @@
                                 </div>
 
                                 <div class="result-item">
-                                    <span class="result-label">Price Per Piece</span>
-                                    <span class="result-value">{{ $formatMoney($piecePricingResult['price_per_piece'] ?? null) }}</span>
+                                    <span class="result-label">Base Price Per Piece</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['base_price_per_piece'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Window &amp; Labor Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['window_labor_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Lace Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['lace_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Designing Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['designing_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Optional Piece Costs Total</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['optional_piece_costs_total'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Punch Cost Job Type</span>
+                                    <span class="result-value">{{ $punchCostJobTypeLabel($piecePricingResult['punch_cost_job_type'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Punch Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['punch_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Expenses</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['expenses'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Compulsory Piece Costs Total</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['compulsory_piece_costs_total'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item result-item--total">
+                                    <span class="result-label">Total Piece Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['total_piece_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item result-item--total">
+                                    <span class="result-label">Total Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['total_cost'] ?? null) }}</span>
                                 </div>
                             </div>
                         @endif
@@ -687,6 +781,8 @@
         const laminationBackSide = document.querySelectorAll('[data-lamination-back-side]');
         const needsSpotUv = document.querySelector('[data-needs-spot-uv]');
         const spotUvDetails = document.querySelectorAll('[data-spot-uv-details]');
+        const punchCostJobType = document.querySelector('[data-punch-cost-job-type]');
+        const newJobPunchCost = document.querySelectorAll('[data-new-job-punch-cost]');
 
         const syncPunching = () => {
             toggle(punchingDetails, needsPunching?.value === '1');
@@ -702,14 +798,20 @@
             toggle(spotUvDetails, needsSpotUv?.value === '1');
         };
 
+        const syncNewJobPunchCost = () => {
+            toggle(newJobPunchCost, punchCostJobType?.value === 'new_job');
+        };
+
         needsPunching?.addEventListener('change', syncPunching);
         needsLamination?.addEventListener('change', syncLamination);
         laminationMode?.addEventListener('change', syncLamination);
         needsSpotUv?.addEventListener('change', syncSpotUv);
+        punchCostJobType?.addEventListener('change', syncNewJobPunchCost);
 
         syncPunching();
         syncLamination();
         syncSpotUv();
+        syncNewJobPunchCost();
     })();
 </script>
 </body>

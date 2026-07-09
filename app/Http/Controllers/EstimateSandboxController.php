@@ -8,8 +8,10 @@ use App\Services\Estimates\DripOffCalculator;
 use App\Services\Estimates\LaminationCalculator;
 use App\Services\Estimates\PaperPricingCalculator;
 use App\Services\Estimates\PaperWeightCalculator;
+use App\Services\Estimates\PieceLevelAddonResolver;
 use App\Services\Estimates\PiecePricingCalculator;
 use App\Services\Estimates\PunchingRateResolver;
+use App\Services\Estimates\RequiredPieceCostResolver;
 use App\Services\Estimates\SpotUvCalculator;
 use App\Services\Estimates\TotalPricePerSheetCalculator;
 use Illuminate\Database\Eloquent\Collection;
@@ -37,6 +39,8 @@ class EstimateSandboxController extends Controller
         SpotUvCalculator $spotUvCalculator,
         DripOffCalculator $dripOffCalculator,
         TotalPricePerSheetCalculator $totalPricePerSheetCalculator,
+        PieceLevelAddonResolver $pieceLevelAddonResolver,
+        RequiredPieceCostResolver $requiredPieceCostResolver,
         PiecePricingCalculator $piecePricingCalculator,
     ): View {
         $validated = $request->validated();
@@ -53,6 +57,8 @@ class EstimateSandboxController extends Controller
         $needsLamination = (bool) $validated['needs_lamination'];
         $needsSpotUv = (bool) $validated['needs_spot_uv'];
         $needsDripOff = (bool) $validated['needs_drip_off'];
+        $needsLaceCost = (bool) $validated['needs_lace_cost'];
+        $punchCostJobType = $validated['punch_cost_job_type'];
         $selectedPunchingItem = $needsPunching && isset($validated['punching_pricing_item_id'])
             ? PricingItem::findOrFail($validated['punching_pricing_item_id'])
             : null;
@@ -114,6 +120,13 @@ class EstimateSandboxController extends Controller
             noOfSheets: (int) $validated['no_of_sheets'],
             ups: (int) $validated['ups'],
             totalPricePerSheet: $totalPricePerSheetResult['total_price_per_sheet'],
+            windowLaborCost: isset($validated['window_labor_cost']) ? (float) $validated['window_labor_cost'] : null,
+            laceCost: $needsLaceCost ? $pieceLevelAddonResolver->laceCost() : null,
+            designingCost: isset($validated['designing_cost']) ? (float) $validated['designing_cost'] : null,
+            punchCostJobType: $punchCostJobType,
+            repeatJobPunchCost: $punchCostJobType === 'repeat_job' ? $requiredPieceCostResolver->repeatJobPunchCost() : null,
+            newJobPunchCost: isset($validated['new_job_punch_cost']) ? (float) $validated['new_job_punch_cost'] : null,
+            expenses: (float) $validated['expenses'],
         );
 
         return view('estimate-sandbox', [

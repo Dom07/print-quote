@@ -50,14 +50,58 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('Piece-Level Costs')
         ->assertSee('These fields apply after the base price per piece is calculated.')
         ->assertSee('Window &amp; Labor Cost', false)
-        ->assertSee('Lace Cost')
+        ->assertSee('Apply Lace')
+        ->assertDontSee('>Lace Cost<', false)
         ->assertSee('Designing Cost')
         ->assertSee('name="ups"', false)
         ->assertSee('name="window_labor_cost"', false)
         ->assertSee('name="needs_lace_cost"', false)
         ->assertSee('name="designing_cost"', false)
         ->assertDontSee('name="needs_window_labor_cost"', false)
-        ->assertDontSee('name="needs_designing_cost"', false);
+        ->assertDontSee('name="needs_designing_cost"', false)
+        ->assertSee('Required Piece Costs')
+        ->assertSee('Job Type')
+        ->assertSee('Repeat Job')
+        ->assertSee('New Job')
+        ->assertSee('New Job Punch Cost')
+        ->assertSee('Expenses')
+        ->assertSee('name="punch_cost_job_type"', false)
+        ->assertSee('name="new_job_punch_cost"', false)
+        ->assertSee('name="expenses"', false);
+});
+
+test('piece level section appears after drip off in the rendered html', function () {
+    seedSandboxPricingItems();
+
+    $response = $this->get('/estimate-sandbox')->assertOk();
+    $html = $response->getContent();
+
+    $dripOffPosition = strpos($html, 'id="needs_drip_off"');
+    $pieceLevelPosition = strpos($html, 'id="piece-level-costs-title"');
+    $formActionsPosition = strpos($html, 'class="form-actions"');
+
+    expect($dripOffPosition)->not->toBeFalse()
+        ->and($pieceLevelPosition)->not->toBeFalse()
+        ->and($formActionsPosition)->not->toBeFalse()
+        ->and($pieceLevelPosition)->toBeGreaterThan($dripOffPosition)
+        ->and($pieceLevelPosition)->toBeLessThan($formActionsPosition);
+});
+
+test('required piece costs section appears after piece level costs in the rendered html', function () {
+    seedSandboxPricingItems();
+
+    $response = $this->get('/estimate-sandbox')->assertOk();
+    $html = $response->getContent();
+
+    $pieceLevelPosition = strpos($html, 'id="piece-level-costs-title"');
+    $requiredPieceCostsPosition = strpos($html, 'id="required-piece-costs-title"');
+    $formActionsPosition = strpos($html, 'class="form-actions"');
+
+    expect($pieceLevelPosition)->not->toBeFalse()
+        ->and($requiredPieceCostsPosition)->not->toBeFalse()
+        ->and($formActionsPosition)->not->toBeFalse()
+        ->and($requiredPieceCostsPosition)->toBeGreaterThan($pieceLevelPosition)
+        ->and($requiredPieceCostsPosition)->toBeLessThan($formActionsPosition);
 });
 
 test('estimate sandbox calculates paper kilograms and paper pricing for valid data', function () {
@@ -81,6 +125,9 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
         'designing_cost' => '',
+        'punch_cost_job_type' => 'repeat_job',
+        'new_job_punch_cost' => '',
+        'expenses' => 0,
         'paper_pricing_item_id' => $paperItem->id,
         'interest_pricing_item_id' => $interestItem->id,
     ])
@@ -117,9 +164,22 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Piece Pricing')
         ->assertSee('Ups')
         ->assertSee('Number of Pieces')
-        ->assertSee('Price Per Piece')
+        ->assertSee('Base Price Per Piece')
+        ->assertSee('Window &amp; Labor Cost', false)
+        ->assertSee('Lace Cost')
+        ->assertSee('Designing Cost')
+        ->assertSee('Optional Piece Costs Total')
+        ->assertSee('Punch Cost Job Type')
+        ->assertSee('Punch Cost')
+        ->assertSee('Expenses')
+        ->assertSee('Compulsory Piece Costs Total')
+        ->assertSee('Total Piece Cost')
+        ->assertSee('Total Cost')
         ->assertSee('4000')
         ->assertSee('875.6348')
+        ->assertSee('0.0625')
+        ->assertSee('875.6973')
+        ->assertSee('3,502,789.1855')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Punching Rate')
         ->assertSee('Lamination Value')
@@ -129,15 +189,88 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Temporary paper weight calculation only. No values are saved.');
 });
 
-test('estimate sandbox validates lace cost as boolean', function () {
+test('checked apply lace uses the db pricing item rate in total piece cost', function () {
     [$paperItem, $interestItem] = seedSandboxPricingItems();
 
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
-        'needs_lace_cost' => 'maybe',
+        'needs_lace_cost' => 1,
     ]))
-        ->assertSessionHasErrors([
-            'needs_lace_cost',
-        ]);
+        ->assertOk()
+        ->assertSee('Lace Cost')
+        ->assertSee('0.6700')
+        ->assertSee('Optional Piece Costs Total')
+        ->assertSee('Total Piece Cost')
+        ->assertSee('876.3673')
+        ->assertSee('3,505,469.1855');
+});
+
+test('unchecked apply lace contributes zero to final price per piece', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_lace_cost' => 0,
+    ]))
+        ->assertOk()
+        ->assertSee('Lace Cost')
+        ->assertSee('Total Piece Cost')
+        ->assertSee('875.6973')
+        ->assertDontSee('876.3673');
+});
+
+test('repeat job uses db repeat job punch cost divided by number of pieces', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'punch_cost_job_type' => 'repeat_job',
+        'new_job_punch_cost' => '',
+    ]))
+        ->assertOk()
+        ->assertSee('Punch Cost Job Type')
+        ->assertSee('Repeat Job')
+        ->assertSee('Punch Cost')
+        ->assertSee('0.0625')
+        ->assertSee('Compulsory Piece Costs Total');
+});
+
+test('new job uses manual new job punch cost', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'punch_cost_job_type' => 'new_job',
+        'new_job_punch_cost' => 3.25,
+    ]))
+        ->assertOk()
+        ->assertSee('Punch Cost Job Type')
+        ->assertSee('New Job')
+        ->assertSee('3.2500')
+        ->assertSee('878.8848');
+});
+
+test('expenses are included in total piece cost', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'expenses' => 0.8,
+    ]))
+        ->assertOk()
+        ->assertSee('Expenses')
+        ->assertSee('0.8000')
+        ->assertSee('Compulsory Piece Costs Total')
+        ->assertSee('0.8625')
+        ->assertSee('Total Piece Cost')
+        ->assertSee('876.4973');
+});
+
+test('estimate sandbox validates apply lace as boolean', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $response = $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_lace_cost' => 'maybe',
+    ]));
+
+    $response->assertSessionHasErrors([
+        'needs_lace_cost' => 'The apply lace field must be true or false.',
+    ]);
 });
 
 test('estimate sandbox requires ups', function () {
@@ -193,6 +326,110 @@ test('estimate sandbox rejects negative designing cost', function () {
     ]))
         ->assertSessionHasErrors([
             'designing_cost',
+        ]);
+});
+
+test('estimate sandbox requires punch cost job type', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $payload = validSandboxPayload($paperItem, $interestItem);
+    unset($payload['punch_cost_job_type']);
+
+    $this->post('/estimate-sandbox', $payload)
+        ->assertSessionHasErrors([
+            'punch_cost_job_type',
+        ]);
+});
+
+test('estimate sandbox only accepts known punch cost job types', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'punch_cost_job_type' => 'first_job',
+    ]))
+        ->assertSessionHasErrors([
+            'punch_cost_job_type',
+        ]);
+});
+
+test('estimate sandbox requires new job punch cost only for new jobs', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'punch_cost_job_type' => 'new_job',
+        'new_job_punch_cost' => '',
+    ]))
+        ->assertSessionHasErrors([
+            'new_job_punch_cost',
+        ]);
+});
+
+test('estimate sandbox does not require new job punch cost for repeat jobs', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'punch_cost_job_type' => 'repeat_job',
+        'new_job_punch_cost' => '',
+    ]))
+        ->assertOk()
+        ->assertSee('Piece Pricing');
+});
+
+test('estimate sandbox validates new job punch cost amount', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'punch_cost_job_type' => 'new_job',
+        'new_job_punch_cost' => -1,
+    ]))
+        ->assertSessionHasErrors([
+            'new_job_punch_cost',
+        ]);
+});
+
+test('estimate sandbox requires new job punch cost to be numeric', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'punch_cost_job_type' => 'new_job',
+        'new_job_punch_cost' => 'manual',
+    ]))
+        ->assertSessionHasErrors([
+            'new_job_punch_cost',
+        ]);
+});
+
+test('estimate sandbox requires expenses', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $payload = validSandboxPayload($paperItem, $interestItem);
+    unset($payload['expenses']);
+
+    $this->post('/estimate-sandbox', $payload)
+        ->assertSessionHasErrors([
+            'expenses',
+        ]);
+});
+
+test('estimate sandbox requires expenses to be numeric', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'expenses' => 'many',
+    ]))
+        ->assertSessionHasErrors([
+            'expenses',
+        ]);
+});
+
+test('estimate sandbox rejects negative expenses', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'expenses' => -1,
+    ]))
+        ->assertSessionHasErrors([
+            'expenses',
         ]);
 });
 
@@ -422,6 +659,9 @@ test('estimate sandbox returns validation errors for invalid data', function () 
         'window_labor_cost' => -1,
         'needs_lace_cost' => 'maybe',
         'designing_cost' => -1,
+        'punch_cost_job_type' => 'first_job',
+        'new_job_punch_cost' => -1,
+        'expenses' => -1,
         'lamination_mode' => 'bad',
         'paper_pricing_item_id' => '',
         'interest_pricing_item_id' => '',
@@ -442,6 +682,9 @@ test('estimate sandbox returns validation errors for invalid data', function () 
             'window_labor_cost',
             'needs_lace_cost',
             'designing_cost',
+            'punch_cost_job_type',
+            'new_job_punch_cost',
+            'expenses',
             'needs_spot_uv',
             'needs_drip_off',
             'lamination_mode',
@@ -471,6 +714,9 @@ test('estimate sandbox validates missing pricing selections', function () {
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
         'designing_cost' => '',
+        'punch_cost_job_type' => 'repeat_job',
+        'new_job_punch_cost' => '',
+        'expenses' => 0,
         'paper_pricing_item_id' => '',
         'interest_pricing_item_id' => '',
     ])
@@ -500,6 +746,9 @@ test('estimate sandbox validates missing manual costs', function () {
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
         'designing_cost' => '',
+        'punch_cost_job_type' => 'repeat_job',
+        'new_job_punch_cost' => '',
+        'expenses' => 0,
     ])
         ->assertSessionHasErrors([
             'printing_cost',
@@ -756,6 +1005,9 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
         'designing_cost' => '',
+        'punch_cost_job_type' => 'repeat_job',
+        'new_job_punch_cost' => '',
+        'expenses' => 0,
         'paper_pricing_item_id' => $paperItem->id,
         'interest_pricing_item_id' => $interestItem->id,
     ], $overrides);
@@ -1046,6 +1298,38 @@ function seedSandboxPricingItems(): array
         'rate' => '1300.0000',
         'rate_type' => 'flat',
         'is_selectable' => false,
+        'is_active' => true,
+    ]);
+
+    $addOnCategory = PricingCategory::create([
+        'name' => 'Add-on Costs',
+        'slug' => 'add-on-costs',
+        'is_active' => true,
+    ]);
+
+    PricingItem::create([
+        'pricing_category_id' => $addOnCategory->id,
+        'name' => 'Lace Cost',
+        'slug' => 'lace-cost',
+        'rate' => '0.6700',
+        'rate_type' => 'per_piece',
+        'is_selectable' => true,
+        'is_active' => true,
+    ]);
+
+    $requiredCostsCategory = PricingCategory::create([
+        'name' => 'Required Costs',
+        'slug' => 'required-costs',
+        'is_active' => true,
+    ]);
+
+    PricingItem::create([
+        'pricing_category_id' => $requiredCostsCategory->id,
+        'name' => 'Repeat Job Punch Cost',
+        'slug' => 'repeat-job-punch-cost',
+        'rate' => '250.0000',
+        'rate_type' => 'flat',
+        'is_selectable' => true,
         'is_active' => true,
     ]);
 
