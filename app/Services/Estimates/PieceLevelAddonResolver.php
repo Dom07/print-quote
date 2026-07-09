@@ -9,8 +9,18 @@ class PieceLevelAddonResolver
 {
     public function laceCost(): float
     {
+        return $this->rateFor('lace-cost');
+    }
+
+    public function designingCost(): float
+    {
+        return $this->rateFor('designing-cost');
+    }
+
+    private function rateFor(string $slug): float
+    {
         $item = PricingItem::query()
-            ->where('slug', 'lace-cost')
+            ->where('slug', $slug)
             ->where('is_active', true)
             ->whereHas('pricingCategory', function ($query) {
                 $query
@@ -20,7 +30,7 @@ class PieceLevelAddonResolver
             ->first();
 
         if ($item === null || $item->rate === null) {
-            throw new RuntimeException('Missing active Add-on Costs pricing item [lace-cost].');
+            throw new RuntimeException("Missing active Add-on Costs pricing item [{$slug}].");
         }
 
         return (float) $item->rate;

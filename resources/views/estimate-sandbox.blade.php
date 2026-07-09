@@ -29,7 +29,7 @@
 
         $fieldValue = fn (string $field) => old($field, $input[$field] ?? '');
         $formatKg = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
-        $formatMoney = fn (?float $value) => $value === null ? '-' : '₹'.number_format($value, 4);
+        $formatMoney = fn (?float $value) => $value === null ? '-' : '₹'.number_format($value, 2);
         $formatPercent = fn (?float $value) => $value === null ? '-' : number_format($value, 4).'%';
         $formatDecimal = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
         $formatDropdownPercent = fn (float $value) => rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.').'%';
@@ -314,14 +314,6 @@
                                         <input class="form-check-input" id="needs_lace_cost" name="needs_lace_cost" type="checkbox" value="1" @checked($needsLaceCost)>
                                         <label class="form-check-label" for="needs_lace_cost">Apply Lace</label>
                                         @error('needs_lace_cost')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="form-label" for="designing_cost">Designing Cost</label>
-                                        <input class="form-input" id="designing_cost" name="designing_cost" type="number" step="any" min="0" value="{{ $fieldValue('designing_cost') }}">
-                                        @error('designing_cost')
                                             <p class="form-error">{{ $message }}</p>
                                         @enderror
                                     </div>
@@ -720,11 +712,6 @@
                                 </div>
 
                                 <div class="result-item">
-                                    <span class="result-label">Designing Cost</span>
-                                    <span class="result-value">{{ $formatMoney($piecePricingResult['designing_cost'] ?? null) }}</span>
-                                </div>
-
-                                <div class="result-item">
                                     <span class="result-label">Optional Piece Costs Total</span>
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['optional_piece_costs_total'] ?? null) }}</span>
                                 </div>
@@ -737,6 +724,11 @@
                                 <div class="result-item">
                                     <span class="result-label">Punch Cost</span>
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['punch_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Designing Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['designing_cost'] ?? null) }}</span>
                                 </div>
 
                                 <div class="result-item">

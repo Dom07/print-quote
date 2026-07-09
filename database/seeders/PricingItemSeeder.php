@@ -43,7 +43,7 @@ class PricingItemSeeder extends Seeder
             ['add-on-costs', 'Window & Labor Cost', 'window-labor-cost', null, 'piece', RateType::PerPiece, true],
             ['add-on-costs', 'Pasting Cost', 'pasting-cost', null, 'piece', RateType::PerPiece, true],
             ['add-on-costs', 'Lace Cost', 'lace-cost', '0.6700', 'piece', RateType::PerPiece, true],
-            ['add-on-costs', 'Designing Cost', 'designing-cost', null, 'job', RateType::Flat, true],
+            ['add-on-costs', 'Designing Cost', 'designing-cost', '400.0000', 'job', RateType::Flat, true],
             ['required-costs', 'Repeat Job Punch Cost', 'repeat-job-punch-cost', '250.0000', 'job', RateType::Flat, true],
             ['required-costs', 'New Job Punch Cost', 'new-job-punch-cost', null, 'job', RateType::Flat, true],
             ['operational-expenses', 'Plate Cost', 'plate-cost', null, 'job', RateType::Flat, false],

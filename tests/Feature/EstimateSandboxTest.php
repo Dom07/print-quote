@@ -3,6 +3,8 @@
 use App\Models\PricingCategory;
 use App\Models\PricingItem;
 use App\Models\PricingRule;
+use Database\Seeders\PricingCategorySeeder;
+use Database\Seeders\PricingItemSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -52,11 +54,10 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('Window &amp; Labor Cost', false)
         ->assertSee('Apply Lace')
         ->assertDontSee('>Lace Cost<', false)
-        ->assertSee('Designing Cost')
         ->assertSee('name="ups"', false)
         ->assertSee('name="window_labor_cost"', false)
         ->assertSee('name="needs_lace_cost"', false)
-        ->assertSee('name="designing_cost"', false)
+        ->assertDontSee('name="designing_cost"', false)
         ->assertDontSee('name="needs_window_labor_cost"', false)
         ->assertDontSee('name="needs_designing_cost"', false)
         ->assertSee('Required Piece Costs')
@@ -68,6 +69,18 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('name="punch_cost_job_type"', false)
         ->assertSee('name="new_job_punch_cost"', false)
         ->assertSee('name="expenses"', false);
+});
+
+test('pricing item seeder sets designing cost rate', function () {
+    $this->seed(PricingCategorySeeder::class);
+    $this->seed(PricingItemSeeder::class);
+
+    $item = PricingItem::query()
+        ->where('slug', 'designing-cost')
+        ->whereHas('pricingCategory', fn ($query) => $query->where('slug', 'add-on-costs'))
+        ->firstOrFail();
+
+    expect($item->rate)->toBe('400.0000');
 });
 
 test('piece level section appears after drip off in the rendered html', function () {
@@ -124,7 +137,6 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'needs_drip_off' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
-        'designing_cost' => '',
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,
@@ -145,13 +157,13 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Printing Cost')
         ->assertSee('Ink Cost')
         ->assertSee('Foiling Cost')
-        ->assertSee('₹41.5000')
+        ->assertSee('₹41.50')
         ->assertSee('1.2500%')
-        ->assertSee('₹42.0188')
-        ->assertSee('₹1.7892')
-        ->assertSee('₹2,500.0000')
-        ->assertSee('₹375.5000')
-        ->assertSee('₹625.2500')
+        ->assertSee('₹42.02')
+        ->assertSee('₹1.79')
+        ->assertSee('₹2,500.00')
+        ->assertSee('₹375.50')
+        ->assertSee('₹625.25')
         ->assertSee('Punching')
         ->assertSee('No Punching')
         ->assertSee('Lamination')
@@ -176,16 +188,16 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Total Piece Cost')
         ->assertSee('Total Cost')
         ->assertSee('4000')
-        ->assertSee('875.6348')
-        ->assertSee('0.0625')
-        ->assertSee('875.6973')
-        ->assertSee('3,502,789.1855')
+        ->assertSee('875.63')
+        ->assertSee('0.06')
+        ->assertSee('875.80')
+        ->assertSee('3,503,189.19')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Punching Rate')
         ->assertSee('Lamination Value')
         ->assertSee('Drip Off Rate')
-        ->assertSee('₹0.0000')
-        ->assertSee('₹3,502.5392')
+        ->assertSee('₹0.00')
+        ->assertSee('₹3,502.54')
         ->assertSee('Temporary paper weight calculation only. No values are saved.');
 });
 
@@ -197,11 +209,13 @@ test('checked apply lace uses the db pricing item rate in total piece cost', fun
     ]))
         ->assertOk()
         ->assertSee('Lace Cost')
-        ->assertSee('0.6700')
+        ->assertSee('0.67')
         ->assertSee('Optional Piece Costs Total')
+        ->assertSee('Designing Cost')
+        ->assertSee('0.10')
         ->assertSee('Total Piece Cost')
-        ->assertSee('876.3673')
-        ->assertSee('3,505,469.1855');
+        ->assertSee('876.47')
+        ->assertSee('3,505,869.19');
 });
 
 test('unchecked apply lace contributes zero to final price per piece', function () {
@@ -213,8 +227,8 @@ test('unchecked apply lace contributes zero to final price per piece', function 
         ->assertOk()
         ->assertSee('Lace Cost')
         ->assertSee('Total Piece Cost')
-        ->assertSee('875.6973')
-        ->assertDontSee('876.3673');
+        ->assertSee('875.80')
+        ->assertDontSee('876.47');
 });
 
 test('repeat job uses db repeat job punch cost divided by number of pieces', function () {
@@ -228,7 +242,9 @@ test('repeat job uses db repeat job punch cost divided by number of pieces', fun
         ->assertSee('Punch Cost Job Type')
         ->assertSee('Repeat Job')
         ->assertSee('Punch Cost')
-        ->assertSee('0.0625')
+        ->assertSee('0.06')
+        ->assertSee('Designing Cost')
+        ->assertSee('0.10')
         ->assertSee('Compulsory Piece Costs Total');
 });
 
@@ -242,8 +258,8 @@ test('new job uses manual new job punch cost', function () {
         ->assertOk()
         ->assertSee('Punch Cost Job Type')
         ->assertSee('New Job')
-        ->assertSee('3.2500')
-        ->assertSee('878.8848');
+        ->assertSee('3.25')
+        ->assertSee('878.98');
 });
 
 test('expenses are included in total piece cost', function () {
@@ -254,11 +270,11 @@ test('expenses are included in total piece cost', function () {
     ]))
         ->assertOk()
         ->assertSee('Expenses')
-        ->assertSee('0.8000')
+        ->assertSee('0.80')
         ->assertSee('Compulsory Piece Costs Total')
-        ->assertSee('0.8625')
+        ->assertSee('0.96')
         ->assertSee('Total Piece Cost')
-        ->assertSee('876.4973');
+        ->assertSee('876.60');
 });
 
 test('estimate sandbox validates apply lace as boolean', function () {
@@ -315,17 +331,6 @@ test('estimate sandbox rejects negative window labor cost', function () {
     ]))
         ->assertSessionHasErrors([
             'window_labor_cost',
-        ]);
-});
-
-test('estimate sandbox rejects negative designing cost', function () {
-    [$paperItem, $interestItem] = seedSandboxPricingItems();
-
-    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
-        'designing_cost' => -1,
-    ]))
-        ->assertSessionHasErrors([
-            'designing_cost',
         ]);
 });
 
@@ -446,15 +451,15 @@ test('estimate sandbox previews drip off when base cost exceeds minimum', functi
         ->assertSee('Coefficient')
         ->assertSee('0.7500')
         ->assertSee('Base Rate Per Sheet')
-        ->assertSee('₹4.5000')
+        ->assertSee('₹4.50')
         ->assertSee('Base Cost')
-        ->assertSee('₹4,500.0000')
+        ->assertSee('₹4,500.00')
         ->assertSee('Flat Add-On Rate Per Sheet')
-        ->assertSee('₹1.3000')
+        ->assertSee('₹1.30')
         ->assertSee('Final Drip Off Rate Per Sheet')
-        ->assertSee('₹5.8000')
+        ->assertSee('₹5.80')
         ->assertSee('Drip Off Rate')
-        ->assertSee('₹3,508.3392');
+        ->assertSee('₹3,508.34');
 });
 
 test('estimate sandbox previews drip off when minimum applies', function () {
@@ -468,13 +473,13 @@ test('estimate sandbox previews drip off when minimum applies', function () {
     ]))
         ->assertOk()
         ->assertSee('Minimum Adjusted Base Cost')
-        ->assertSee('₹2,500.0000')
+        ->assertSee('₹2,500.00')
         ->assertSee('Minimum Adjusted Base Rate Per Sheet')
-        ->assertSee('₹2.5000')
+        ->assertSee('₹2.50')
         ->assertSee('Final Drip Off Rate Per Sheet')
-        ->assertSee('₹3.8000')
+        ->assertSee('₹3.80')
         ->assertSee('Drip Off Rate')
-        ->assertSee('₹3,504.8482');
+        ->assertSee('₹3,504.85');
 });
 
 test('estimate sandbox previews spot uv at exact threshold', function () {
@@ -491,10 +496,10 @@ test('estimate sandbox previews spot uv at exact threshold', function () {
         ->assertSee('Quantity Used')
         ->assertSee('1000')
         ->assertSee('Minimum / Quantity')
-        ->assertSee('₹1,250.0000')
-        ->assertSee('₹1.2500')
+        ->assertSee('₹1,250.00')
+        ->assertSee('₹1.25')
         ->assertSee('Spot UV Value')
-        ->assertSee('₹3,503.7892');
+        ->assertSee('₹3,503.79');
 });
 
 test('estimate sandbox previews spot uv above threshold', function () {
@@ -507,9 +512,9 @@ test('estimate sandbox previews spot uv above threshold', function () {
     ]))
         ->assertOk()
         ->assertSee('Per Sheet')
-        ->assertSee('₹1.2500')
+        ->assertSee('₹1.25')
         ->assertSee('Spot UV Value')
-        ->assertSee('₹3,503.7892');
+        ->assertSee('₹3,503.79');
 });
 
 test('estimate sandbox previews raised uv at exact threshold', function () {
@@ -523,8 +528,8 @@ test('estimate sandbox previews raised uv at exact threshold', function () {
         ->assertOk()
         ->assertSee('Raised UV')
         ->assertSee('Minimum / Quantity')
-        ->assertSee('₹2,800.0000')
-        ->assertSee('₹2.8000');
+        ->assertSee('₹2,800.00')
+        ->assertSee('₹2.80');
 });
 
 test('estimate sandbox previews raised uv above threshold', function () {
@@ -538,7 +543,7 @@ test('estimate sandbox previews raised uv above threshold', function () {
         ->assertOk()
         ->assertSee('Raised UV')
         ->assertSee('Per Sheet')
-        ->assertSee('₹2.8000');
+        ->assertSee('₹2.80');
 });
 
 test('estimate sandbox previews one side bopp lamination at lower threshold', function () {
@@ -558,10 +563,10 @@ test('estimate sandbox previews one side bopp lamination at lower threshold', fu
         ->assertSee('Selected Lamination')
         ->assertSee('BOPP Lamination')
         ->assertSee('0.3700')
-        ->assertSee('₹2.2200')
+        ->assertSee('₹2.22')
         ->assertSee('Combined Lamination Value')
         ->assertSee('Lamination Value')
-        ->assertSee('₹3,504.7592');
+        ->assertSee('₹3,504.76');
 });
 
 test('estimate sandbox previews one side bopp lamination above threshold', function () {
@@ -577,7 +582,7 @@ test('estimate sandbox previews one side bopp lamination above threshold', funct
     ]))
         ->assertOk()
         ->assertSee('0.3500')
-        ->assertSee('₹2.1000');
+        ->assertSee('₹2.10');
 });
 
 test('estimate sandbox previews both side bopp and matte lamination', function () {
@@ -598,7 +603,7 @@ test('estimate sandbox previews both side bopp and matte lamination', function (
         ->assertSee('BOPP Lamination')
         ->assertSee('Back Side')
         ->assertSee('Matte Lamination')
-        ->assertSee('₹5.0400');
+        ->assertSee('₹5.04');
 });
 
 test('estimate sandbox resolves standard punching rate at two thousand sheets', function () {
@@ -612,9 +617,9 @@ test('estimate sandbox resolves standard punching rate at two thousand sheets', 
         ->assertOk()
         ->assertSee('Punching')
         ->assertSee('Standard Punching')
-        ->assertSee('₹1.0000')
+        ->assertSee('₹1.00')
         ->assertSee('Punching Rate')
-        ->assertSee('₹3,502.6446');
+        ->assertSee('₹3,502.64');
 });
 
 test('estimate sandbox resolves standard punching rate above two thousand sheets', function () {
@@ -627,7 +632,7 @@ test('estimate sandbox resolves standard punching rate above two thousand sheets
     ]))
         ->assertOk()
         ->assertSee('Standard Punching')
-        ->assertSee('₹0.6000');
+        ->assertSee('₹0.60');
 });
 
 test('estimate sandbox resolves complicated punching item rate', function () {
@@ -639,7 +644,7 @@ test('estimate sandbox resolves complicated punching item rate', function () {
     ]))
         ->assertOk()
         ->assertSee('Complicated Punching')
-        ->assertSee('₹0.7000');
+        ->assertSee('₹0.70');
 });
 
 test('estimate sandbox returns validation errors for invalid data', function () {
@@ -658,7 +663,6 @@ test('estimate sandbox returns validation errors for invalid data', function () 
         'needs_lamination' => 'maybe',
         'window_labor_cost' => -1,
         'needs_lace_cost' => 'maybe',
-        'designing_cost' => -1,
         'punch_cost_job_type' => 'first_job',
         'new_job_punch_cost' => -1,
         'expenses' => -1,
@@ -681,7 +685,6 @@ test('estimate sandbox returns validation errors for invalid data', function () 
             'needs_lamination',
             'window_labor_cost',
             'needs_lace_cost',
-            'designing_cost',
             'punch_cost_job_type',
             'new_job_punch_cost',
             'expenses',
@@ -713,7 +716,6 @@ test('estimate sandbox validates missing pricing selections', function () {
         'needs_drip_off' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
-        'designing_cost' => '',
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,
@@ -745,7 +747,6 @@ test('estimate sandbox validates missing manual costs', function () {
         'needs_drip_off' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
-        'designing_cost' => '',
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,
@@ -768,9 +769,9 @@ test('estimate sandbox allows missing foiling cost', function () {
         ->assertSee('Printing Cost')
         ->assertSee('Ink Cost')
         ->assertSee('Foiling Cost')
-        ->assertSee('₹0.0000')
-        ->assertSee('₹2,877.2892')
-        ->assertDontSee('₹625.2500');
+        ->assertSee('₹0.00')
+        ->assertSee('₹2,877.29')
+        ->assertDontSee('₹625.25');
 });
 
 test('estimate sandbox requires no of sheets to process', function () {
@@ -1004,7 +1005,6 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'needs_drip_off' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
-        'designing_cost' => '',
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,
@@ -1313,6 +1313,16 @@ function seedSandboxPricingItems(): array
         'slug' => 'lace-cost',
         'rate' => '0.6700',
         'rate_type' => 'per_piece',
+        'is_selectable' => true,
+        'is_active' => true,
+    ]);
+
+    PricingItem::create([
+        'pricing_category_id' => $addOnCategory->id,
+        'name' => 'Designing Cost',
+        'slug' => 'designing-cost',
+        'rate' => '400.0000',
+        'rate_type' => 'flat',
         'is_selectable' => true,
         'is_active' => true,
     ]);

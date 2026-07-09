@@ -122,7 +122,7 @@ class EstimateSandboxController extends Controller
             totalPricePerSheet: $totalPricePerSheetResult['total_price_per_sheet'],
             windowLaborCost: isset($validated['window_labor_cost']) ? (float) $validated['window_labor_cost'] : null,
             laceCost: $needsLaceCost ? $pieceLevelAddonResolver->laceCost() : null,
-            designingCost: isset($validated['designing_cost']) ? (float) $validated['designing_cost'] : null,
+            designingCostRate: $pieceLevelAddonResolver->designingCost(),
             punchCostJobType: $punchCostJobType,
             repeatJobPunchCost: $punchCostJobType === 'repeat_job' ? $requiredPieceCostResolver->repeatJobPunchCost() : null,
             newJobPunchCost: isset($validated['new_job_punch_cost']) ? (float) $validated['new_job_punch_cost'] : null,

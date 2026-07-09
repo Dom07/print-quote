@@ -20,7 +20,7 @@ test('it calculates base price per piece', function () {
         totalPricePerSheet: 3502.5392,
     );
 
-    expect($result['base_price_per_piece'])->toBe(875.6348);
+    expect($result['base_price_per_piece'])->toBe(875.63);
 });
 
 test('it treats nullable optional costs as zero', function () {
@@ -30,7 +30,7 @@ test('it treats nullable optional costs as zero', function () {
         totalPricePerSheet: 3502.5392,
         windowLaborCost: null,
         laceCost: null,
-        designingCost: null,
+        designingCostRate: null,
     );
 
     expect($result['window_labor_cost'])->toBe(0.0)
@@ -39,20 +39,31 @@ test('it treats nullable optional costs as zero', function () {
         ->and($result['optional_piece_costs_total'])->toBe(0.0);
 });
 
-test('it includes window labor lace and designing in optional piece costs total', function () {
+test('it includes window labor and lace in optional piece costs total', function () {
     $result = (new PiecePricingCalculator)->calculate(
         noOfSheets: 1000,
         ups: 4,
         totalPricePerSheet: 3502.5392,
         windowLaborCost: 1.25,
         laceCost: 0.67,
-        designingCost: 2.5,
+        designingCostRate: 400,
     );
 
     expect($result['window_labor_cost'])->toBe(1.25)
         ->and($result['lace_cost'])->toBe(0.67)
-        ->and($result['designing_cost'])->toBe(2.5)
-        ->and(round($result['optional_piece_costs_total'], 4))->toBe(4.42);
+        ->and($result['designing_cost'])->toBe(0.1)
+        ->and($result['optional_piece_costs_total'])->toBe(1.92);
+});
+
+test('it divides designing cost rate by number of pieces', function () {
+    $result = (new PiecePricingCalculator)->calculate(
+        noOfSheets: 1000,
+        ups: 4,
+        totalPricePerSheet: 3502.5392,
+        designingCostRate: 400,
+    );
+
+    expect($result['designing_cost'])->toBe(0.1);
 });
 
 test('it divides repeat job punch cost by number of pieces', function () {
@@ -65,7 +76,7 @@ test('it divides repeat job punch cost by number of pieces', function () {
     );
 
     expect($result['punch_cost_job_type'])->toBe('repeat_job')
-        ->and($result['punch_cost'])->toBe(0.0625);
+        ->and($result['punch_cost'])->toBe(0.06);
 });
 
 test('it uses new job punch cost as a direct per piece value', function () {
@@ -88,12 +99,14 @@ test('it includes punch cost and expenses in compulsory piece costs total', func
         totalPricePerSheet: 3502.5392,
         punchCostJobType: 'repeat_job',
         repeatJobPunchCost: 250,
+        designingCostRate: 400,
         expenses: 0.75,
     );
 
     expect($result['expenses'])->toBe(0.75)
-        ->and($result['punch_cost'])->toBe(0.0625)
-        ->and($result['compulsory_piece_costs_total'])->toBe(0.8125);
+        ->and($result['punch_cost'])->toBe(0.06)
+        ->and($result['designing_cost'])->toBe(0.1)
+        ->and($result['compulsory_piece_costs_total'])->toBe(0.91);
 });
 
 test('it calculates total piece cost', function () {
@@ -103,13 +116,13 @@ test('it calculates total piece cost', function () {
         totalPricePerSheet: 3502.5392,
         windowLaborCost: 1.25,
         laceCost: 0.67,
-        designingCost: 2.5,
+        designingCostRate: 400,
         punchCostJobType: 'new_job',
         newJobPunchCost: 3,
         expenses: 1.2,
     );
 
-    expect(round($result['total_piece_cost'], 4))->toBe(884.2548);
+    expect($result['total_piece_cost'])->toBe(881.85);
 });
 
 test('it calculates total cost', function () {
@@ -119,13 +132,34 @@ test('it calculates total cost', function () {
         totalPricePerSheet: 3502.5392,
         windowLaborCost: 1.25,
         laceCost: 0.67,
-        designingCost: 2.5,
+        designingCostRate: 400,
         punchCostJobType: 'new_job',
         newJobPunchCost: 3,
         expenses: 1.2,
     );
 
-    expect(round($result['total_cost'], 4))->toBe(3537019.2);
+    expect($result['total_cost'])->toBe(3527419.2);
+});
+
+test('it standard half-up rounds money outputs to two decimals', function () {
+    $result = (new PiecePricingCalculator)->calculate(
+        noOfSheets: 1000,
+        ups: 1,
+        totalPricePerSheet: 10.005,
+        windowLaborCost: 10.004,
+        laceCost: 10.015,
+        designingCostRate: 10.001,
+        punchCostJobType: 'new_job',
+        newJobPunchCost: 10.006,
+        expenses: 10.011,
+    );
+
+    expect($result['base_price_per_piece'])->toBe(10.01)
+        ->and($result['window_labor_cost'])->toBe(10.0)
+        ->and($result['lace_cost'])->toBe(10.02)
+        ->and($result['designing_cost'])->toBe(0.01)
+        ->and($result['punch_cost'])->toBe(10.01)
+        ->and($result['expenses'])->toBe(10.01);
 });
 
 test('it rejects invalid ups', function () {
