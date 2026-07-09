@@ -49,6 +49,7 @@ class PiecePricingCalculator
             'expenses' => $this->money($expenses),
             'compulsory_piece_costs_total' => $this->money($compulsoryPieceCostsTotal),
             'total_piece_cost' => $this->money($totalPieceCost),
+            'total_cost_for_margin' => $totalPieceCost * $numberOfPieces,
             'total_cost' => $this->money($totalPieceCost * $numberOfPieces),
         ];
     }

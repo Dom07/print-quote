@@ -6,6 +6,7 @@ use App\Http\Requests\EstimateSandboxRequest;
 use App\Models\PricingItem;
 use App\Services\Estimates\DripOffCalculator;
 use App\Services\Estimates\LaminationCalculator;
+use App\Services\Estimates\MarginCalculator;
 use App\Services\Estimates\PaperPricingCalculator;
 use App\Services\Estimates\PaperWeightCalculator;
 use App\Services\Estimates\PieceLevelAddonResolver;
@@ -42,6 +43,7 @@ class EstimateSandboxController extends Controller
         PieceLevelAddonResolver $pieceLevelAddonResolver,
         RequiredPieceCostResolver $requiredPieceCostResolver,
         PiecePricingCalculator $piecePricingCalculator,
+        MarginCalculator $marginCalculator,
     ): View {
         $validated = $request->validated();
 
@@ -128,6 +130,7 @@ class EstimateSandboxController extends Controller
             newJobPunchCost: isset($validated['new_job_punch_cost']) ? (float) $validated['new_job_punch_cost'] : null,
             expenses: (float) $validated['expenses'],
         );
+        $marginResult = $marginCalculator->calculate($piecePricingResult['total_cost_for_margin']);
 
         return view('estimate-sandbox', [
             'input' => $validated,
@@ -150,6 +153,7 @@ class EstimateSandboxController extends Controller
             'dripOffResult' => $dripOffResult,
             'totalPricePerSheetResult' => $totalPricePerSheetResult,
             'piecePricingResult' => $piecePricingResult,
+            'marginResult' => $marginResult,
         ]);
     }
 

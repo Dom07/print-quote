@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MarginSlab;
 use App\Models\PricingCategory;
 use App\Models\PricingItem;
 use App\Models\PricingRule;
@@ -190,11 +191,20 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Compulsory Piece Costs Total')
         ->assertSee('Total Piece Cost')
         ->assertSee('Total Cost')
+        ->assertSee('Margin')
+        ->assertSee('Selected Margin Slab')
+        ->assertSee('Margin Percentage')
+        ->assertSee('Margin Amount')
+        ->assertSee('Total Cost With Margin')
         ->assertSee('4000')
         ->assertSee('875.63')
         ->assertSee('0.06')
         ->assertSee('875.80')
         ->assertSee('3,503,189.19')
+        ->assertSee('Above 3.5 Lac')
+        ->assertSee('10.0000%')
+        ->assertSee('350,318.92')
+        ->assertSee('3,853,508.10')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Punching Rate')
         ->assertSee('Lamination Value')
@@ -202,6 +212,37 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('₹0.00')
         ->assertSee('₹3,502.54')
         ->assertSee('Temporary paper weight calculation only. No values are saved.');
+});
+
+test('sandbox margin changes based on calculated total cost', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'printing_cost' => 1,
+        'ink_cost' => 1,
+        'foiling_cost' => '',
+        'punch_cost_job_type' => 'new_job',
+        'new_job_punch_cost' => 0,
+    ]))
+        ->assertOk()
+        ->assertSee('Margin')
+        ->assertSee('Below 20k')
+        ->assertSee('17.0000%')
+        ->assertSee('Margin Amount')
+        ->assertSee('Total Cost With Margin');
+});
+
+test('sandbox total cost with margin is calculated from total cost plus margin amount', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem))
+        ->assertOk()
+        ->assertSee('Total Cost')
+        ->assertSee('3,503,189.19')
+        ->assertSee('Margin Amount')
+        ->assertSee('350,318.92')
+        ->assertSee('Total Cost With Margin')
+        ->assertSee('3,853,508.10');
 });
 
 test('checked apply lace uses the db pricing item rate in total piece cost', function () {
@@ -1018,6 +1059,51 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
 
 function seedSandboxPricingItems(): array
 {
+    MarginSlab::create([
+        'name' => 'Below 20k',
+        'min_amount' => null,
+        'max_amount' => '20000.0000',
+        'margin_percentage' => '17.0000',
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+
+    MarginSlab::create([
+        'name' => '20k to 50k',
+        'min_amount' => '20000.0000',
+        'max_amount' => '50000.0000',
+        'margin_percentage' => '15.0000',
+        'sort_order' => 2,
+        'is_active' => true,
+    ]);
+
+    MarginSlab::create([
+        'name' => '50k to 1.5 Lac',
+        'min_amount' => '50000.0000',
+        'max_amount' => '150000.0000',
+        'margin_percentage' => '13.0000',
+        'sort_order' => 3,
+        'is_active' => true,
+    ]);
+
+    MarginSlab::create([
+        'name' => '1.5 Lac to 3.5 Lac',
+        'min_amount' => '150000.0000',
+        'max_amount' => '350000.0000',
+        'margin_percentage' => '12.0000',
+        'sort_order' => 4,
+        'is_active' => true,
+    ]);
+
+    MarginSlab::create([
+        'name' => 'Above 3.5 Lac',
+        'min_amount' => '350000.0000',
+        'max_amount' => null,
+        'margin_percentage' => '10.0000',
+        'sort_order' => 5,
+        'is_active' => true,
+    ]);
+
     $paperCategory = PricingCategory::create([
         'name' => 'Paper',
         'slug' => 'paper',

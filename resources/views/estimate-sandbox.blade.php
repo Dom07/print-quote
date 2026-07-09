@@ -17,6 +17,7 @@
         $dripOffResult = $dripOffResult ?? null;
         $totalPricePerSheetResult = $totalPricePerSheetResult ?? null;
         $piecePricingResult = $piecePricingResult ?? null;
+        $marginResult = $marginResult ?? null;
         $selectedPunchingItem = $selectedPunchingItem ?? null;
         $selectedFrontLaminationItem = $selectedFrontLaminationItem ?? null;
         $selectedBackLaminationItem = $selectedBackLaminationItem ?? null;
@@ -749,6 +750,32 @@
                                 <div class="result-item result-item--total">
                                     <span class="result-label">Total Cost</span>
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['total_cost'] ?? null) }}</span>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if ($marginResult !== null)
+                            <h3 class="result-section-title">Margin</h3>
+
+                            <div class="result-stack">
+                                <div class="result-item">
+                                    <span class="result-label">Selected Margin Slab</span>
+                                    <span class="result-value">{{ $marginResult['selected_margin_slab_name'] ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Margin Percentage</span>
+                                    <span class="result-value">{{ $formatPercent($marginResult['margin_percentage'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Margin Amount</span>
+                                    <span class="result-value">{{ $formatMoney($marginResult['margin_amount'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item result-item--total">
+                                    <span class="result-label">Total Cost With Margin</span>
+                                    <span class="result-value">{{ $formatMoney($marginResult['total_cost_with_margin'] ?? null) }}</span>
                                 </div>
                             </div>
                         @endif
