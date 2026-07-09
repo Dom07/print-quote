@@ -144,9 +144,12 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'interest_pricing_item_id' => $interestItem->id,
     ])
         ->assertOk()
-        ->assertSee('38.7097')
-        ->assertSee('42.5806')
-        ->assertSee('46.4516')
+        ->assertSee('38.71')
+        ->assertSee('42.58')
+        ->assertSee('46.45')
+        ->assertDontSee('38.7097')
+        ->assertDontSee('42.5806')
+        ->assertDontSee('46.4516')
         ->assertSee('KG for Sheets With Wastage')
         ->assertSee('Paper Pricing')
         ->assertSee('Selected Paper Rate')
@@ -797,7 +800,7 @@ test('estimate sandbox allows zero sheets to process when process sections are o
     ]))
         ->assertOk()
         ->assertSee('KG for Sheets To Process')
-        ->assertSee('0.0000');
+        ->assertSee('0.00');
 });
 
 test('estimate sandbox rejects zero sheets to process when lamination is selected', function () {

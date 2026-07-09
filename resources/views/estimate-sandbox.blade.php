@@ -28,7 +28,7 @@
         $spotUvOptions = $spotUvOptions ?? collect();
 
         $fieldValue = fn (string $field) => old($field, $input[$field] ?? '');
-        $formatKg = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
+        $formatKg = fn (?float $value) => $value === null ? '-' : number_format(round($value, 2, PHP_ROUND_HALF_UP), 2);
         $formatMoney = fn (?float $value) => $value === null ? '-' : '₹'.number_format($value, 2);
         $formatPercent = fn (?float $value) => $value === null ? '-' : number_format($value, 4).'%';
         $formatDecimal = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
