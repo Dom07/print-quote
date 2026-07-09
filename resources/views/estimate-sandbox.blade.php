@@ -44,6 +44,7 @@
             'new_job' => 'New Job',
             default => '-',
         };
+        $needsFoiling = (string) $fieldValue('needs_foiling') === '1';
         $needsPunching = (string) $fieldValue('needs_punching') === '1';
         $needsLamination = (string) $fieldValue('needs_lamination') === '1';
         $needsSpotUv = (string) $fieldValue('needs_spot_uv') === '1';
@@ -69,6 +70,13 @@
 
                     <div class="ui-card__body">
                         <div class="form-grid">
+                            <section class="form-section form-section--full" aria-labelledby="initial-paper-pricing-title">
+                                <div class="form-section__header">
+                                    <h2 class="form-section__title" id="initial-paper-pricing-title">Initial Paper Pricing</h2>
+                                    <p class="form-section__subtitle">Base paper inputs used to calculate kilograms, updated paper rate, and price per sheet.</p>
+                                </div>
+
+                                <div class="form-section__fields">
                             <div class="form-group">
                                 <label class="form-label" for="length">Length (inches)</label>
                                 <input class="form-input" id="length" name="length" type="number" step="any" min="0" value="{{ $fieldValue('length') }}">
@@ -146,7 +154,16 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
+                                </div>
+                            </section>
 
+                            <section class="form-section form-section--full" aria-labelledby="printing-ink-title">
+                                <div class="form-section__header">
+                                    <h2 class="form-section__title" id="printing-ink-title">Printing &amp; Ink</h2>
+                                    <p class="form-section__subtitle">Manual per-sheet production costs included in total price per sheet.</p>
+                                </div>
+
+                                <div class="form-section__fields">
                             <div class="form-group">
                                 <label class="form-label" for="printing_cost">Printing Cost</label>
                                 <input class="form-input" id="printing_cost" name="printing_cost" type="number" step="any" min="0" value="{{ $fieldValue('printing_cost') }}">
@@ -162,172 +179,258 @@
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="foiling_cost">Foiling Cost</label>
-                                <input class="form-input" id="foiling_cost" name="foiling_cost" type="number" step="any" min="0" value="{{ $fieldValue('foiling_cost') }}">
-                                @error('foiling_cost')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="needs_punching">Need Punching?</label>
-                                <select class="form-input" id="needs_punching" name="needs_punching" data-needs-punching>
-                                    <option value="0" @selected(! $needsPunching)>No</option>
-                                    <option value="1" @selected($needsPunching)>Yes</option>
-                                </select>
-                                @error('needs_punching')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group {{ $needsPunching ? '' : 'is-hidden' }}" data-punching-details>
-                                <label class="form-label" for="punching_pricing_item_id">Punching Type</label>
-                                <select class="form-input" id="punching_pricing_item_id" name="punching_pricing_item_id">
-                                    <option value="">No Punching</option>
-                                    @foreach ($punchingOptions as $punchingOption)
-                                        <option value="{{ $punchingOption->id }}" @selected((string) $fieldValue('punching_pricing_item_id') === (string) $punchingOption->id)>
-                                            {{ $punchingOption->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('punching_pricing_item_id')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="needs_lamination">Need Lamination?</label>
-                                <select class="form-input" id="needs_lamination" name="needs_lamination" data-needs-lamination>
-                                    <option value="0" @selected(! $needsLamination)>No</option>
-                                    <option value="1" @selected($needsLamination)>Yes</option>
-                                </select>
-                                @error('needs_lamination')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group {{ $needsLamination ? '' : 'is-hidden' }}" data-lamination-details>
-                                <label class="form-label" for="lamination_mode">Lamination Coverage</label>
-                                <select class="form-input" id="lamination_mode" name="lamination_mode" data-lamination-mode>
-                                    <option value="">Select coverage</option>
-                                    <option value="front_only" @selected($fieldValue('lamination_mode') === 'front_only')>Front Only</option>
-                                    <option value="both_sides" @selected($fieldValue('lamination_mode') === 'both_sides')>Both Sides</option>
-                                </select>
-                                @error('lamination_mode')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group {{ $needsLamination ? '' : 'is-hidden' }}" data-lamination-details>
-                                <label class="form-label" for="lamination_front_pricing_item_id">Front Side Lamination Type</label>
-                                <select class="form-input" id="lamination_front_pricing_item_id" name="lamination_front_pricing_item_id">
-                                    <option value="">Select lamination</option>
-                                    @foreach ($laminationOptions as $laminationOption)
-                                        <option value="{{ $laminationOption->id }}" @selected((string) $fieldValue('lamination_front_pricing_item_id') === (string) $laminationOption->id)>
-                                            {{ $laminationOption->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('lamination_front_pricing_item_id')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group {{ $showLaminationBackSide ? '' : 'is-hidden' }}" data-lamination-back-side>
-                                <label class="form-label" for="lamination_back_pricing_item_id">Back Side Lamination Type</label>
-                                <select class="form-input" id="lamination_back_pricing_item_id" name="lamination_back_pricing_item_id">
-                                    <option value="">Select lamination</option>
-                                    @foreach ($laminationOptions as $laminationOption)
-                                        <option value="{{ $laminationOption->id }}" @selected((string) $fieldValue('lamination_back_pricing_item_id') === (string) $laminationOption->id)>
-                                            {{ $laminationOption->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('lamination_back_pricing_item_id')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="needs_spot_uv">Need Spot UV?</label>
-                                <select class="form-input" id="needs_spot_uv" name="needs_spot_uv" data-needs-spot-uv>
-                                    <option value="0" @selected(! $needsSpotUv)>No</option>
-                                    <option value="1" @selected($needsSpotUv)>Yes</option>
-                                </select>
-                                @error('needs_spot_uv')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group {{ $needsSpotUv ? '' : 'is-hidden' }}" data-spot-uv-details>
-                                <label class="form-label" for="spot_uv_pricing_item_id">UV Type</label>
-                                <select class="form-input" id="spot_uv_pricing_item_id" name="spot_uv_pricing_item_id">
-                                    <option value="">Select UV type</option>
-                                    @foreach ($spotUvOptions as $spotUvOption)
-                                        <option value="{{ $spotUvOption->id }}" @selected((string) $fieldValue('spot_uv_pricing_item_id') === (string) $spotUvOption->id)>
-                                            {{ $spotUvOption->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('spot_uv_pricing_item_id')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="needs_drip_off">Need Drip Off?</label>
-                                <select class="form-input" id="needs_drip_off" name="needs_drip_off">
-                                    <option value="0" @selected(! $needsDripOff)>No</option>
-                                    <option value="1" @selected($needsDripOff)>Yes</option>
-                                </select>
-                                @error('needs_drip_off')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <section class="form-section form-section--full" aria-labelledby="piece-level-costs-title">
-                                <div class="form-section__header">
-                                    <h2 class="form-section__title" id="piece-level-costs-title">Piece-Level Costs</h2>
-                                    <p class="form-section__subtitle">These fields apply after the base price per piece is calculated.</p>
-                                </div>
-
-                                <div class="form-section__fields">
-                                    <div class="form-group">
-                                        <label class="form-label" for="ups">Ups</label>
-                                        <input class="form-input" id="ups" name="ups" type="number" step="1" min="1" value="{{ $fieldValue('ups') }}">
-                                        @error('ups')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="form-label" for="window_labor_cost">Window &amp; Labor Cost</label>
-                                        <input class="form-input" id="window_labor_cost" name="window_labor_cost" type="number" step="any" min="0" value="{{ $fieldValue('window_labor_cost') }}">
-                                        @error('window_labor_cost')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-check">
-                                        <input type="hidden" name="needs_lace_cost" value="0">
-                                        <input class="form-check-input" id="needs_lace_cost" name="needs_lace_cost" type="checkbox" value="1" @checked($needsLaceCost)>
-                                        <label class="form-check-label" for="needs_lace_cost">Apply Lace</label>
-                                        @error('needs_lace_cost')
-                                            <p class="form-error">{{ $message }}</p>
-                                        @enderror
-                                    </div>
                                 </div>
                             </section>
 
-                            <section class="form-section form-section--full" aria-labelledby="required-piece-costs-title">
+                            <section class="form-section form-section--full" aria-labelledby="sheet-add-ons-title">
                                 <div class="form-section__header">
-                                    <h2 class="form-section__title" id="required-piece-costs-title">Required Piece Costs</h2>
-                                    <p class="form-section__subtitle">These required fields are captured for later piece cost calculation.</p>
+                                    <h2 class="form-section__title" id="sheet-add-ons-title">Sheet Add-ons</h2>
+                                    <p class="form-section__subtitle">Optional sheet-level processes that contribute to total price per sheet.</p>
+                                </div>
+
+                                <div class="addon-panel-stack">
+                                    <section class="addon-card" aria-labelledby="foiling-addon-title">
+                                        <div class="addon-card__header">
+                                            <div>
+                                                <h3 class="addon-card__title" id="foiling-addon-title">Foiling</h3>
+                                                <p class="addon-card__description">Add a manual per-sheet foiling cost.</p>
+                                            </div>
+                                            <label class="addon-card__checkbox" for="needs_foiling">
+                                                <input type="hidden" name="needs_foiling" value="0">
+                                                <input class="form-check-input" id="needs_foiling" name="needs_foiling" type="checkbox" value="1" data-needs-foiling @checked($needsFoiling)>
+                                                <span>Apply Foiling</span>
+                                            </label>
+                                        </div>
+                                        @error('needs_foiling')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+
+                                        <div class="addon-card__body {{ $needsFoiling ? '' : 'is-hidden' }}" data-foiling-details>
+                                            <div class="form-group">
+                                                <label class="form-label" for="foiling_cost">Foiling Cost</label>
+                                                <input class="form-input" id="foiling_cost" name="foiling_cost" type="number" step="any" min="0" value="{{ $fieldValue('foiling_cost') }}">
+                                                @error('foiling_cost')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="addon-card" aria-labelledby="punching-addon-title">
+                                        <div class="addon-card__header">
+                                            <div>
+                                                <h3 class="addon-card__title" id="punching-addon-title">Punching</h3>
+                                                <p class="addon-card__description">Apply punching cost based on the selected punching type.</p>
+                                            </div>
+                                            <label class="addon-card__checkbox" for="needs_punching">
+                                                <input type="hidden" name="needs_punching" value="0">
+                                                <input class="form-check-input" id="needs_punching" name="needs_punching" type="checkbox" value="1" data-needs-punching @checked($needsPunching)>
+                                                <span>Apply Punching</span>
+                                            </label>
+                                        </div>
+                                        @error('needs_punching')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+
+                                        <div class="addon-card__body {{ $needsPunching ? '' : 'is-hidden' }}" data-punching-details>
+                                            <div class="form-group">
+                                                <label class="form-label" for="punching_pricing_item_id">Punching Type</label>
+                                                <select class="form-input" id="punching_pricing_item_id" name="punching_pricing_item_id">
+                                                    <option value="">No Punching</option>
+                                                    @foreach ($punchingOptions as $punchingOption)
+                                                        <option value="{{ $punchingOption->id }}" @selected((string) $fieldValue('punching_pricing_item_id') === (string) $punchingOption->id)>
+                                                            {{ $punchingOption->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                @error('punching_pricing_item_id')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="addon-card" aria-labelledby="lamination-addon-title">
+                                        <div class="addon-card__header">
+                                            <div>
+                                                <h3 class="addon-card__title" id="lamination-addon-title">Lamination</h3>
+                                                <p class="addon-card__description">Apply front-only or both-side lamination to processed sheets.</p>
+                                            </div>
+                                            <label class="addon-card__checkbox" for="needs_lamination">
+                                                <input type="hidden" name="needs_lamination" value="0">
+                                                <input class="form-check-input" id="needs_lamination" name="needs_lamination" type="checkbox" value="1" data-needs-lamination @checked($needsLamination)>
+                                                <span>Apply Lamination</span>
+                                            </label>
+                                        </div>
+                                        @error('needs_lamination')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+
+                                        <div class="addon-card__body {{ $needsLamination ? '' : 'is-hidden' }}" data-lamination-details>
+                                            <div class="addon-card__nested-grid">
+                                                <div class="form-group">
+                                                    <label class="form-label" for="lamination_mode">Lamination Coverage</label>
+                                                    <select class="form-input" id="lamination_mode" name="lamination_mode" data-lamination-mode>
+                                                        <option value="">Select coverage</option>
+                                                        <option value="front_only" @selected($fieldValue('lamination_mode') === 'front_only')>Front Only</option>
+                                                        <option value="both_sides" @selected($fieldValue('lamination_mode') === 'both_sides')>Both Sides</option>
+                                                    </select>
+                                                    @error('lamination_mode')
+                                                        <p class="form-error">{{ $message }}</p>
+                                                    @enderror
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label class="form-label" for="lamination_front_pricing_item_id">Front Side Lamination Type</label>
+                                                    <select class="form-input" id="lamination_front_pricing_item_id" name="lamination_front_pricing_item_id">
+                                                        <option value="">Select lamination</option>
+                                                        @foreach ($laminationOptions as $laminationOption)
+                                                            <option value="{{ $laminationOption->id }}" @selected((string) $fieldValue('lamination_front_pricing_item_id') === (string) $laminationOption->id)>
+                                                                {{ $laminationOption->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('lamination_front_pricing_item_id')
+                                                        <p class="form-error">{{ $message }}</p>
+                                                    @enderror
+                                                </div>
+
+                                                <div class="form-group {{ $showLaminationBackSide ? '' : 'is-hidden' }}" data-lamination-back-side>
+                                                    <label class="form-label" for="lamination_back_pricing_item_id">Back Side Lamination Type</label>
+                                                    <select class="form-input" id="lamination_back_pricing_item_id" name="lamination_back_pricing_item_id">
+                                                        <option value="">Select lamination</option>
+                                                        @foreach ($laminationOptions as $laminationOption)
+                                                            <option value="{{ $laminationOption->id }}" @selected((string) $fieldValue('lamination_back_pricing_item_id') === (string) $laminationOption->id)>
+                                                                {{ $laminationOption->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('lamination_back_pricing_item_id')
+                                                        <p class="form-error">{{ $message }}</p>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="addon-card" aria-labelledby="spot-uv-addon-title">
+                                        <div class="addon-card__header">
+                                            <div>
+                                                <h3 class="addon-card__title" id="spot-uv-addon-title">Spot UV</h3>
+                                                <p class="addon-card__description">Apply spot UV or raised UV cost to processed sheets.</p>
+                                            </div>
+                                            <label class="addon-card__checkbox" for="needs_spot_uv">
+                                                <input type="hidden" name="needs_spot_uv" value="0">
+                                                <input class="form-check-input" id="needs_spot_uv" name="needs_spot_uv" type="checkbox" value="1" data-needs-spot-uv @checked($needsSpotUv)>
+                                                <span>Apply Spot UV</span>
+                                            </label>
+                                        </div>
+                                        @error('needs_spot_uv')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+
+                                        <div class="addon-card__body {{ $needsSpotUv ? '' : 'is-hidden' }}" data-spot-uv-details>
+                                            <div class="form-group">
+                                                <label class="form-label" for="spot_uv_pricing_item_id">UV Type</label>
+                                                <select class="form-input" id="spot_uv_pricing_item_id" name="spot_uv_pricing_item_id">
+                                                    <option value="">Select UV type</option>
+                                                    @foreach ($spotUvOptions as $spotUvOption)
+                                                        <option value="{{ $spotUvOption->id }}" @selected((string) $fieldValue('spot_uv_pricing_item_id') === (string) $spotUvOption->id)>
+                                                            {{ $spotUvOption->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                @error('spot_uv_pricing_item_id')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="addon-card" aria-labelledby="drip-off-addon-title">
+                                        <div class="addon-card__header">
+                                            <div>
+                                                <h3 class="addon-card__title" id="drip-off-addon-title">Drip Off</h3>
+                                                <p class="addon-card__description">Apply drip off based on configured drip-off rates.</p>
+                                            </div>
+                                            <label class="addon-card__checkbox" for="needs_drip_off">
+                                                <input type="hidden" name="needs_drip_off" value="0">
+                                                <input class="form-check-input" id="needs_drip_off" name="needs_drip_off" type="checkbox" value="1" @checked($needsDripOff)>
+                                                <span>Apply Drip Off</span>
+                                            </label>
+                                        </div>
+                                        @error('needs_drip_off')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </section>
+                                </div>
+                            </section>
+
+                            <section class="form-section form-section--full" aria-labelledby="price-per-piece-title">
+                                <div class="form-section__header">
+                                    <h2 class="form-section__title" id="price-per-piece-title">Price Per Piece</h2>
+                                    <p class="form-section__subtitle">Inputs used after total price per sheet is calculated to determine piece cost, order total, and margin.</p>
                                 </div>
 
                                 <div class="form-section__fields">
+                                    <section class="form-section form-section--full" aria-labelledby="piece-inputs-title">
+                                        <div class="form-section__header">
+                                            <h2 class="form-section__title" id="piece-inputs-title">Piece Inputs</h2>
+                                            <p class="form-section__subtitle">Inputs used to convert sheet pricing into piece pricing.</p>
+                                        </div>
+
+                                        <div class="form-section__fields">
+                                            <div class="form-group">
+                                                <label class="form-label" for="ups">Ups</label>
+                                                <input class="form-input" id="ups" name="ups" type="number" step="1" min="1" value="{{ $fieldValue('ups') }}">
+                                                @error('ups')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label class="form-label" for="window_labor_cost">Window &amp; Labor Cost</label>
+                                                <input class="form-input" id="window_labor_cost" name="window_labor_cost" type="number" step="any" min="0" value="{{ $fieldValue('window_labor_cost') }}">
+                                                @error('window_labor_cost')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="form-section form-section--full" aria-labelledby="piece-add-ons-title">
+                                        <div class="form-section__header">
+                                            <h2 class="form-section__title" id="piece-add-ons-title">Piece Add-ons</h2>
+                                            <p class="form-section__subtitle">Optional piece-level add-ons applied after base price per piece is calculated.</p>
+                                        </div>
+
+                                        <div class="addon-panel-stack">
+                                            <section class="addon-card" aria-labelledby="lace-addon-title">
+                                                <div class="addon-card__header">
+                                                    <div>
+                                                        <h3 class="addon-card__title" id="lace-addon-title">Lace</h3>
+                                                        <p class="addon-card__description">Apply configured per-piece lace cost.</p>
+                                                    </div>
+                                                    <label class="addon-card__checkbox" for="needs_lace_cost">
+                                                        <input type="hidden" name="needs_lace_cost" value="0">
+                                                        <input class="form-check-input" id="needs_lace_cost" name="needs_lace_cost" type="checkbox" value="1" @checked($needsLaceCost)>
+                                                        <span>Apply Lace</span>
+                                                    </label>
+                                                </div>
+                                                @error('needs_lace_cost')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </section>
+                                        </div>
+                                    </section>
+
+                                    <section class="form-section form-section--full" aria-labelledby="required-piece-costs-title">
+                                        <div class="form-section__header">
+                                            <h2 class="form-section__title" id="required-piece-costs-title">Required Piece Costs</h2>
+                                            <p class="form-section__subtitle">These required fields are captured for later piece cost calculation.</p>
+                                        </div>
+
+                                        <div class="form-section__fields">
                                     <div class="form-group">
                                         <label class="form-label" for="punch_cost_job_type">Job Type</label>
                                         <select class="form-input" id="punch_cost_job_type" name="punch_cost_job_type" data-punch-cost-job-type>
@@ -355,6 +458,8 @@
                                             <p class="form-error">{{ $message }}</p>
                                         @enderror
                                     </div>
+                                        </div>
+                                    </section>
                                 </div>
                             </section>
                         </div>
@@ -427,7 +532,7 @@
                                     <span class="result-value">{{ $formatMoney((float) $input['ink_cost']) }}</span>
                                 </div>
 
-                                @if (($input['foiling_cost'] ?? null) !== null)
+                                @if (($input['needs_foiling'] ?? false) && ($input['foiling_cost'] ?? null) !== null)
                                     <div class="result-item">
                                         <span class="result-label">Foiling Cost</span>
                                         <span class="result-value">{{ $formatMoney((float) $input['foiling_cost']) }}</span>
@@ -792,6 +897,8 @@
             elements.forEach((element) => element.classList.toggle('is-hidden', !isVisible));
         };
 
+        const needsFoiling = document.querySelector('[data-needs-foiling]');
+        const foilingDetails = document.querySelectorAll('[data-foiling-details]');
         const needsPunching = document.querySelector('[data-needs-punching]');
         const punchingDetails = document.querySelectorAll('[data-punching-details]');
         const needsLamination = document.querySelector('[data-needs-lamination]');
@@ -803,30 +910,36 @@
         const punchCostJobType = document.querySelector('[data-punch-cost-job-type]');
         const newJobPunchCost = document.querySelectorAll('[data-new-job-punch-cost]');
 
+        const syncFoiling = () => {
+            toggle(foilingDetails, needsFoiling?.checked === true);
+        };
+
         const syncPunching = () => {
-            toggle(punchingDetails, needsPunching?.value === '1');
+            toggle(punchingDetails, needsPunching?.checked === true);
         };
 
         const syncLamination = () => {
-            const isNeeded = needsLamination?.value === '1';
+            const isNeeded = needsLamination?.checked === true;
             toggle(laminationDetails, isNeeded);
             toggle(laminationBackSide, isNeeded && laminationMode?.value === 'both_sides');
         };
 
         const syncSpotUv = () => {
-            toggle(spotUvDetails, needsSpotUv?.value === '1');
+            toggle(spotUvDetails, needsSpotUv?.checked === true);
         };
 
         const syncNewJobPunchCost = () => {
             toggle(newJobPunchCost, punchCostJobType?.value === 'new_job');
         };
 
+        needsFoiling?.addEventListener('change', syncFoiling);
         needsPunching?.addEventListener('change', syncPunching);
         needsLamination?.addEventListener('change', syncLamination);
         laminationMode?.addEventListener('change', syncLamination);
         needsSpotUv?.addEventListener('change', syncSpotUv);
         punchCostJobType?.addEventListener('change', syncNewJobPunchCost);
 
+        syncFoiling();
         syncPunching();
         syncLamination();
         syncSpotUv();

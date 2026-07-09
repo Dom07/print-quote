@@ -17,6 +17,22 @@ test('estimate sandbox page loads successfully', function () {
         ->assertOk()
         ->assertSee('Estimate Sandbox')
         ->assertSee('Temporary calculation screen for testing paper inputs.')
+        ->assertSee('Initial Paper Pricing')
+        ->assertSee('Base paper inputs used to calculate kilograms, updated paper rate, and price per sheet.')
+        ->assertSee('Printing &amp; Ink', false)
+        ->assertSee('Manual per-sheet production costs included in total price per sheet.')
+        ->assertSee('Sheet Add-ons')
+        ->assertSee('Optional sheet-level processes that contribute to total price per sheet.')
+        ->assertSee('Price Per Piece')
+        ->assertSee('Inputs used after total price per sheet is calculated to determine piece cost, order total, and margin.')
+        ->assertSee('name="length"', false)
+        ->assertSee('name="width"', false)
+        ->assertSee('name="gsm"', false)
+        ->assertSee('name="no_of_sheets"', false)
+        ->assertSee('name="no_of_sheets_with_wastage"', false)
+        ->assertSee('name="no_of_sheets_to_process"', false)
+        ->assertSee('name="paper_pricing_item_id"', false)
+        ->assertSee('name="interest_pricing_item_id"', false)
         ->assertSee('Paper Rate')
         ->assertSee('Grey Back ORD')
         ->assertDontSee('₹41.5000')
@@ -24,16 +40,38 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('1.25%')
         ->assertDontSee('Interest 1.25%')
         ->assertDontSee('1.2500%')
-        ->assertSee('Need Punching?')
+        ->assertSee('name="printing_cost"', false)
+        ->assertSee('name="ink_cost"', false)
+        ->assertSee('name="needs_foiling"', false)
+        ->assertSee('name="foiling_cost"', false)
+        ->assertSee('name="needs_punching"', false)
+        ->assertSee('name="punching_pricing_item_id"', false)
+        ->assertSee('Foiling')
+        ->assertSee('Add a manual per-sheet foiling cost.')
+        ->assertSee('Apply Foiling')
+        ->assertSee('type="hidden" name="needs_foiling" value="0"', false)
+        ->assertSee('id="needs_foiling" name="needs_foiling" type="checkbox" value="1"', false)
+        ->assertSee('Punching')
+        ->assertSee('Apply punching cost based on the selected punching type.')
+        ->assertSee('Apply Punching')
+        ->assertSee('type="hidden" name="needs_punching" value="0"', false)
+        ->assertSee('id="needs_punching" name="needs_punching" type="checkbox" value="1"', false)
         ->assertSee('No Punching')
         ->assertSee('Standard Punching')
         ->assertSee('Complicated Punching')
         ->assertDontSee('₹1.0000')
         ->assertDontSee('₹0.6000')
         ->assertDontSee('₹0.7000')
-        ->assertSee('Need Lamination?')
+        ->assertSee('name="needs_lamination"', false)
+        ->assertSee('name="lamination_mode"', false)
+        ->assertSee('name="lamination_front_pricing_item_id"', false)
+        ->assertSee('name="lamination_back_pricing_item_id"', false)
+        ->assertSee('Lamination')
+        ->assertSee('Apply front-only or both-side lamination to processed sheets.')
+        ->assertSee('Apply Lamination')
+        ->assertSee('type="hidden" name="needs_lamination" value="0"', false)
+        ->assertSee('id="needs_lamination" name="needs_lamination" type="checkbox" value="1"', false)
         ->assertSee('Lamination Coverage')
-        ->assertSee('No Lamination')
         ->assertSee('Front Only')
         ->assertSee('Both Sides')
         ->assertSee('BOPP Lamination')
@@ -43,21 +81,36 @@ test('estimate sandbox page loads successfully', function () {
         ->assertDontSee('0.3500')
         ->assertDontSee('0.4700')
         ->assertDontSee('0.4500')
-        ->assertSee('Need Spot UV?')
+        ->assertSee('name="needs_spot_uv"', false)
+        ->assertSee('name="spot_uv_pricing_item_id"', false)
+        ->assertSee('name="needs_drip_off"', false)
+        ->assertSee('Apply spot UV or raised UV cost to processed sheets.')
+        ->assertSee('Apply Spot UV')
+        ->assertSee('type="hidden" name="needs_spot_uv" value="0"', false)
+        ->assertSee('id="needs_spot_uv" name="needs_spot_uv" type="checkbox" value="1"', false)
         ->assertSee('Spot UV')
         ->assertSee('Raised UV')
         ->assertDontSee('₹1250.0000')
         ->assertDontSee('₹2800.0000')
-        ->assertSee('Need Drip Off?')
+        ->assertSee('Drip Off')
+        ->assertSee('Apply drip off calculation using configured drip-off rates.')
+        ->assertSee('Apply Drip Off')
+        ->assertSee('type="hidden" name="needs_drip_off" value="0"', false)
+        ->assertSee('id="needs_drip_off" name="needs_drip_off" type="checkbox" value="1"', false)
+        ->assertSee('Piece Inputs')
+        ->assertSee('Inputs used to convert sheet pricing into piece pricing.')
         ->assertSee('Ups')
-        ->assertSee('Piece-Level Costs')
-        ->assertSee('These fields apply after the base price per piece is calculated.')
         ->assertSee('Window &amp; Labor Cost', false)
+        ->assertSee('Piece Add-ons')
+        ->assertSee('Optional piece-level add-ons applied after base price per piece is calculated.')
+        ->assertSee('Lace')
+        ->assertSee('Apply configured per-piece lace cost.')
         ->assertSee('Apply Lace')
         ->assertDontSee('>Lace Cost<', false)
         ->assertSee('name="ups"', false)
         ->assertSee('name="window_labor_cost"', false)
         ->assertSee('name="needs_lace_cost"', false)
+        ->assertDontSee('name="lace_cost"', false)
         ->assertDontSee('name="designing_cost"', false)
         ->assertDontSee('name="needs_window_labor_cost"', false)
         ->assertDontSee('name="needs_designing_cost"', false)
@@ -72,6 +125,38 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('name="expenses"', false);
 });
 
+test('estimate sandbox form sections render in calculation order', function () {
+    seedSandboxPricingItems();
+
+    $response = $this->get('/estimate-sandbox')->assertOk();
+    $html = $response->getContent();
+
+    $initialPaperPricingPosition = strpos($html, 'id="initial-paper-pricing-title"');
+    $printingInkPosition = strpos($html, 'id="printing-ink-title"');
+    $sheetAddOnsPosition = strpos($html, 'id="sheet-add-ons-title"');
+    $pricePerPiecePosition = strpos($html, 'id="price-per-piece-title"');
+    $pieceInputsPosition = strpos($html, 'id="piece-inputs-title"');
+    $pieceAddOnsPosition = strpos($html, 'id="piece-add-ons-title"');
+    $requiredPieceCostsPosition = strpos($html, 'id="required-piece-costs-title"');
+    $formActionsPosition = strpos($html, 'class="form-actions"');
+
+    expect($initialPaperPricingPosition)->not->toBeFalse()
+        ->and($printingInkPosition)->not->toBeFalse()
+        ->and($sheetAddOnsPosition)->not->toBeFalse()
+        ->and($pricePerPiecePosition)->not->toBeFalse()
+        ->and($pieceInputsPosition)->not->toBeFalse()
+        ->and($pieceAddOnsPosition)->not->toBeFalse()
+        ->and($requiredPieceCostsPosition)->not->toBeFalse()
+        ->and($formActionsPosition)->not->toBeFalse()
+        ->and($printingInkPosition)->toBeGreaterThan($initialPaperPricingPosition)
+        ->and($sheetAddOnsPosition)->toBeGreaterThan($printingInkPosition)
+        ->and($pricePerPiecePosition)->toBeGreaterThan($sheetAddOnsPosition)
+        ->and($pieceInputsPosition)->toBeGreaterThan($pricePerPiecePosition)
+        ->and($pieceAddOnsPosition)->toBeGreaterThan($pieceInputsPosition)
+        ->and($requiredPieceCostsPosition)->toBeGreaterThan($pieceAddOnsPosition)
+        ->and($requiredPieceCostsPosition)->toBeLessThan($formActionsPosition);
+});
+
 test('pricing item seeder sets designing cost rate', function () {
     $this->seed(PricingCategorySeeder::class);
     $this->seed(PricingItemSeeder::class);
@@ -84,37 +169,40 @@ test('pricing item seeder sets designing cost rate', function () {
     expect($item->rate)->toBe('400.0000');
 });
 
-test('piece level section appears after drip off in the rendered html', function () {
+test('piece inputs section appears after drip off in the rendered html', function () {
     seedSandboxPricingItems();
 
     $response = $this->get('/estimate-sandbox')->assertOk();
     $html = $response->getContent();
 
     $dripOffPosition = strpos($html, 'id="needs_drip_off"');
-    $pieceLevelPosition = strpos($html, 'id="piece-level-costs-title"');
+    $pieceInputsPosition = strpos($html, 'id="piece-inputs-title"');
     $formActionsPosition = strpos($html, 'class="form-actions"');
 
     expect($dripOffPosition)->not->toBeFalse()
-        ->and($pieceLevelPosition)->not->toBeFalse()
+        ->and($pieceInputsPosition)->not->toBeFalse()
         ->and($formActionsPosition)->not->toBeFalse()
-        ->and($pieceLevelPosition)->toBeGreaterThan($dripOffPosition)
-        ->and($pieceLevelPosition)->toBeLessThan($formActionsPosition);
+        ->and($pieceInputsPosition)->toBeGreaterThan($dripOffPosition)
+        ->and($pieceInputsPosition)->toBeLessThan($formActionsPosition);
 });
 
-test('required piece costs section appears after piece level costs in the rendered html', function () {
+test('required piece costs section appears after piece add-ons in the rendered html', function () {
     seedSandboxPricingItems();
 
     $response = $this->get('/estimate-sandbox')->assertOk();
     $html = $response->getContent();
 
-    $pieceLevelPosition = strpos($html, 'id="piece-level-costs-title"');
+    $pieceInputsPosition = strpos($html, 'id="piece-inputs-title"');
+    $pieceAddOnsPosition = strpos($html, 'id="piece-add-ons-title"');
     $requiredPieceCostsPosition = strpos($html, 'id="required-piece-costs-title"');
     $formActionsPosition = strpos($html, 'class="form-actions"');
 
-    expect($pieceLevelPosition)->not->toBeFalse()
+    expect($pieceInputsPosition)->not->toBeFalse()
+        ->and($pieceAddOnsPosition)->not->toBeFalse()
         ->and($requiredPieceCostsPosition)->not->toBeFalse()
         ->and($formActionsPosition)->not->toBeFalse()
-        ->and($requiredPieceCostsPosition)->toBeGreaterThan($pieceLevelPosition)
+        ->and($pieceAddOnsPosition)->toBeGreaterThan($pieceInputsPosition)
+        ->and($requiredPieceCostsPosition)->toBeGreaterThan($pieceAddOnsPosition)
         ->and($requiredPieceCostsPosition)->toBeLessThan($formActionsPosition);
 });
 
@@ -131,6 +219,7 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'no_of_sheets_to_process' => 1200,
         'printing_cost' => 2500,
         'ink_cost' => 375.5,
+        'needs_foiling' => 1,
         'foiling_cost' => 625.25,
         'needs_punching' => 0,
         'needs_lamination' => 0,
@@ -220,6 +309,7 @@ test('sandbox margin changes based on calculated total cost', function () {
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
         'printing_cost' => 1,
         'ink_cost' => 1,
+        'needs_foiling' => 0,
         'foiling_cost' => '',
         'punch_cost_job_type' => 'new_job',
         'new_job_punch_cost' => 0,
@@ -702,6 +792,7 @@ test('estimate sandbox returns validation errors for invalid data', function () 
         'no_of_sheets_to_process' => -2,
         'printing_cost' => -1,
         'ink_cost' => 'ink',
+        'needs_foiling' => 'maybe',
         'foiling_cost' => 'foil',
         'needs_punching' => 'maybe',
         'needs_lamination' => 'maybe',
@@ -724,6 +815,7 @@ test('estimate sandbox returns validation errors for invalid data', function () 
             'no_of_sheets_to_process',
             'printing_cost',
             'ink_cost',
+            'needs_foiling',
             'foiling_cost',
             'needs_punching',
             'needs_lamination',
@@ -753,6 +845,7 @@ test('estimate sandbox validates missing pricing selections', function () {
         'no_of_sheets_to_process' => 1200,
         'printing_cost' => 2500,
         'ink_cost' => 375.5,
+        'needs_foiling' => 1,
         'foiling_cost' => 625.25,
         'needs_punching' => 0,
         'needs_lamination' => 0,
@@ -801,10 +894,12 @@ test('estimate sandbox validates missing manual costs', function () {
         ]);
 });
 
-test('estimate sandbox allows missing foiling cost', function () {
+test('estimate sandbox does not require foiling cost when apply foiling is unchecked', function () {
     [$paperItem, $interestItem] = seedSandboxPricingItems();
 
-    $payload = validSandboxPayload($paperItem, $interestItem);
+    $payload = validSandboxPayload($paperItem, $interestItem, [
+        'needs_foiling' => 0,
+    ]);
     unset($payload['foiling_cost']);
 
     $this->post('/estimate-sandbox', $payload)
@@ -816,6 +911,44 @@ test('estimate sandbox allows missing foiling cost', function () {
         ->assertSee('₹0.00')
         ->assertSee('₹2,877.29')
         ->assertDontSee('₹625.25');
+});
+
+test('estimate sandbox requires foiling cost when apply foiling is checked', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_foiling' => 1,
+        'foiling_cost' => '',
+    ]))
+        ->assertSessionHasErrors([
+            'foiling_cost',
+        ]);
+});
+
+test('unchecked apply foiling contributes zero even when a stale value is submitted', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_foiling' => 0,
+        'foiling_cost' => 625.25,
+    ]))
+        ->assertOk()
+        ->assertSee('Total Price Per Sheet')
+        ->assertSee('2,877.29');
+});
+
+test('checked apply foiling includes submitted foiling cost in total price per sheet', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_foiling' => 1,
+        'foiling_cost' => 625.25,
+    ]))
+        ->assertOk()
+        ->assertSee('Foiling Cost')
+        ->assertSee('625.25')
+        ->assertSee('Total Price Per Sheet')
+        ->assertSee('3,502.54');
 });
 
 test('estimate sandbox requires no of sheets to process', function () {
@@ -1042,6 +1175,7 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'no_of_sheets_to_process' => 1200,
         'printing_cost' => 2500,
         'ink_cost' => 375.5,
+        'needs_foiling' => 1,
         'foiling_cost' => 625.25,
         'needs_punching' => 0,
         'needs_lamination' => 0,

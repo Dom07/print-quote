@@ -55,6 +55,7 @@ class EstimateSandboxController extends Controller
 
         $selectedPaperItem = PricingItem::findOrFail($validated['paper_pricing_item_id']);
         $selectedInterestItem = PricingItem::findOrFail($validated['interest_pricing_item_id']);
+        $needsFoiling = (bool) $validated['needs_foiling'];
         $needsPunching = (bool) $validated['needs_punching'];
         $needsLamination = (bool) $validated['needs_lamination'];
         $needsSpotUv = (bool) $validated['needs_spot_uv'];
@@ -112,7 +113,7 @@ class EstimateSandboxController extends Controller
             paperPricePerSheet: $paperPricingResult['price_per_sheet'],
             printingCost: (float) $validated['printing_cost'],
             inkCost: (float) $validated['ink_cost'],
-            foilingCost: isset($validated['foiling_cost']) ? (float) $validated['foiling_cost'] : null,
+            foilingCost: $needsFoiling && isset($validated['foiling_cost']) ? (float) $validated['foiling_cost'] : null,
             punchingRate: $punchingRateResult['rate'] ?? null,
             laminationValue: $laminationResult['combined_value'] ?? null,
             spotUvValue: $spotUvResult['value'] ?? null,

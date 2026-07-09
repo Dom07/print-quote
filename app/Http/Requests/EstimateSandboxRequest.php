@@ -26,7 +26,8 @@ class EstimateSandboxRequest extends FormRequest
             'no_of_sheets_to_process' => ['required', 'numeric', 'integer', 'min:0'],
             'printing_cost' => ['required', 'numeric', 'min:0'],
             'ink_cost' => ['required', 'numeric', 'min:0'],
-            'foiling_cost' => ['nullable', 'numeric', 'min:0'],
+            'needs_foiling' => ['required', 'boolean'],
+            'foiling_cost' => ['nullable', 'required_if:needs_foiling,1', 'numeric', 'min:0'],
             'needs_punching' => ['required', 'boolean'],
             'paper_pricing_item_id' => [
                 'required',
@@ -91,6 +92,7 @@ class EstimateSandboxRequest extends FormRequest
             'no_of_sheets_to_process' => 'no. of sheets to process',
             'printing_cost' => 'printing cost',
             'ink_cost' => 'ink cost',
+            'needs_foiling' => 'apply foiling',
             'foiling_cost' => 'foiling cost',
             'needs_punching' => 'need punching',
             'paper_pricing_item_id' => 'paper rate',
