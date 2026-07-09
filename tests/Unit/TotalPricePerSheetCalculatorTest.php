@@ -9,7 +9,7 @@ test('it adds only required base components', function () {
         inkCost: 375.5,
     );
 
-    expect($result['components']['paper_price_per_sheet'])->toBe(1.7892)
+    expect($result['components']['paper_price_per_sheet'])->toBe(1.79)
         ->and($result['components']['printing_cost'])->toBe(2500.0)
         ->and($result['components']['ink_cost'])->toBe(375.5)
         ->and($result['components']['foiling_cost'])->toBe(0.0)
@@ -17,7 +17,7 @@ test('it adds only required base components', function () {
         ->and($result['components']['lamination_value'])->toBe(0.0)
         ->and($result['components']['spot_uv_value'])->toBe(0.0)
         ->and($result['components']['drip_off_rate'])->toBe(0.0)
-        ->and($result['total_price_per_sheet'])->toBe(2877.2892);
+        ->and($result['total_price_per_sheet'])->toBe(2877.29);
 });
 
 test('it adds all optional components', function () {
@@ -32,7 +32,7 @@ test('it adds all optional components', function () {
         dripOffRate: 5.8,
     );
 
-    expect($result['total_price_per_sheet'])->toBe(3512.8092);
+    expect($result['total_price_per_sheet'])->toBe(3512.81);
 });
 
 test('it returns the expected component keys', function () {

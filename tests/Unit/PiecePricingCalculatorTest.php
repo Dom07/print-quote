@@ -138,7 +138,18 @@ test('it calculates total cost', function () {
         expenses: 1.2,
     );
 
-    expect($result['total_cost'])->toBe(3527419.2);
+    expect($result['total_cost'])->toBe(3527400.0);
+});
+
+test('it does not return a separate raw total cost for margin', function () {
+    $result = (new PiecePricingCalculator)->calculate(
+        noOfSheets: 1000,
+        ups: 4,
+        totalPricePerSheet: 3502.54,
+    );
+
+    expect($result)->not->toHaveKey('total_cost_for_margin')
+        ->and($result['total_cost'])->toBe(3502560.0);
 });
 
 test('it standard half-up rounds money outputs to two decimals', function () {

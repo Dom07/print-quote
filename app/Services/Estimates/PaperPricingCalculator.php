@@ -6,6 +6,11 @@ use InvalidArgumentException;
 
 class PaperPricingCalculator
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function calculate(
         float $selectedPaperRate,
         float $interestPercentage,
@@ -16,9 +21,10 @@ class PaperPricingCalculator
             throw new InvalidArgumentException('No. of sheets must be greater than 0.');
         }
 
-        $updatedPaperRate = $selectedPaperRate + (($interestPercentage / 100) * $selectedPaperRate);
+        $selectedPaperRate = $this->rounder->money($selectedPaperRate);
+        $updatedPaperRate = $this->rounder->money($selectedPaperRate + (($interestPercentage / 100) * $selectedPaperRate));
         $orderPaperCost = $updatedPaperRate * $kgsOfOrder;
-        $pricePerSheet = $orderPaperCost / $noOfSheets;
+        $pricePerSheet = $this->rounder->money($orderPaperCost / $noOfSheets);
 
         return [
             'selected_paper_rate' => $selectedPaperRate,

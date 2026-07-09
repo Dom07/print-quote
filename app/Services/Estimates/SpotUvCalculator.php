@@ -9,6 +9,11 @@ use InvalidArgumentException;
 
 class SpotUvCalculator
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function calculate(?PricingItem $pricingItem, int $quantity): ?array
     {
         if ($pricingItem === null) {
@@ -37,20 +42,20 @@ class SpotUvCalculator
         return [
             'name' => $pricingItem->name,
             'quantity' => $quantity,
-            'resolved_amount' => (float) $pricingItem->rate,
+            'resolved_amount' => $this->rounder->money((float) $pricingItem->rate),
             'calculation_type' => 'per_sheet',
-            'value' => (float) $pricingItem->rate,
+            'value' => $this->rounder->money((float) $pricingItem->rate),
             'source' => 'item',
         ];
     }
 
     private function resultFromRule(PricingItem $pricingItem, PricingRule $rule, int $quantity): array
     {
-        $resolvedAmount = (float) $rule->rate;
+        $resolvedAmount = $this->rounder->money((float) $rule->rate);
         $calculationType = $this->calculationType($rule);
-        $value = $calculationType === 'minimum_divided_by_quantity'
+        $value = $this->rounder->money($calculationType === 'minimum_divided_by_quantity'
             ? $resolvedAmount / $quantity
-            : $resolvedAmount;
+            : $resolvedAmount);
 
         return [
             'name' => $pricingItem->name,

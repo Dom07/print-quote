@@ -6,6 +6,11 @@ use InvalidArgumentException;
 
 class PiecePricingCalculator
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function calculate(
         int $noOfSheets,
         int $ups,
@@ -23,39 +28,34 @@ class PiecePricingCalculator
         }
 
         $numberOfPieces = $noOfSheets * $ups;
-        $basePricePerPiece = $totalPricePerSheet / $ups;
-        $windowLaborCost = $windowLaborCost ?? 0.0;
-        $laceCost = $laceCost ?? 0.0;
-        $designingCost = ($designingCostRate ?? 0.0) / $numberOfPieces;
-        $optionalPieceCostsTotal = $windowLaborCost + $laceCost;
+        $basePricePerPiece = $this->rounder->money($totalPricePerSheet / $ups);
+        $windowLaborCost = $this->rounder->money($windowLaborCost ?? 0.0);
+        $laceCost = $this->rounder->money($laceCost ?? 0.0);
+        $designingCost = $this->rounder->money(($designingCostRate ?? 0.0) / $numberOfPieces);
+        $optionalPieceCostsTotal = $this->rounder->money($windowLaborCost + $laceCost);
         $punchCost = match ($punchCostJobType) {
-            'repeat_job' => ($repeatJobPunchCost ?? 0.0) / $numberOfPieces,
-            'new_job' => $newJobPunchCost ?? 0.0,
+            'repeat_job' => $this->rounder->money(($repeatJobPunchCost ?? 0.0) / $numberOfPieces),
+            'new_job' => $this->rounder->money($newJobPunchCost ?? 0.0),
             default => throw new InvalidArgumentException('Punch cost job type must be repeat_job or new_job.'),
         };
-        $compulsoryPieceCostsTotal = $punchCost + $designingCost + $expenses;
-        $totalPieceCost = $basePricePerPiece + $optionalPieceCostsTotal + $compulsoryPieceCostsTotal;
+        $expenses = $this->rounder->money($expenses);
+        $compulsoryPieceCostsTotal = $this->rounder->money($punchCost + $designingCost + $expenses);
+        $totalPieceCost = $this->rounder->money($basePricePerPiece + $optionalPieceCostsTotal + $compulsoryPieceCostsTotal);
 
         return [
             'ups' => $ups,
             'number_of_pieces' => $numberOfPieces,
-            'base_price_per_piece' => $this->money($basePricePerPiece),
-            'window_labor_cost' => $this->money($windowLaborCost),
-            'lace_cost' => $this->money($laceCost),
-            'designing_cost' => $this->money($designingCost),
-            'optional_piece_costs_total' => $this->money($optionalPieceCostsTotal),
+            'base_price_per_piece' => $basePricePerPiece,
+            'window_labor_cost' => $windowLaborCost,
+            'lace_cost' => $laceCost,
+            'designing_cost' => $designingCost,
+            'optional_piece_costs_total' => $optionalPieceCostsTotal,
             'punch_cost_job_type' => $punchCostJobType,
-            'punch_cost' => $this->money($punchCost),
-            'expenses' => $this->money($expenses),
-            'compulsory_piece_costs_total' => $this->money($compulsoryPieceCostsTotal),
-            'total_piece_cost' => $this->money($totalPieceCost),
-            'total_cost_for_margin' => $totalPieceCost * $numberOfPieces,
-            'total_cost' => $this->money($totalPieceCost * $numberOfPieces),
+            'punch_cost' => $punchCost,
+            'expenses' => $expenses,
+            'compulsory_piece_costs_total' => $compulsoryPieceCostsTotal,
+            'total_piece_cost' => $totalPieceCost,
+            'total_cost' => $this->rounder->money($totalPieceCost * $numberOfPieces),
         ];
-    }
-
-    private function money(float $value): float
-    {
-        return round($value, 2, PHP_ROUND_HALF_UP);
     }
 }

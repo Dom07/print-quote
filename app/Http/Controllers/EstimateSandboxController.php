@@ -130,7 +130,7 @@ class EstimateSandboxController extends Controller
             newJobPunchCost: isset($validated['new_job_punch_cost']) ? (float) $validated['new_job_punch_cost'] : null,
             expenses: (float) $validated['expenses'],
         );
-        $marginResult = $marginCalculator->calculate($piecePricingResult['total_cost_for_margin']);
+        $marginResult = $marginCalculator->calculate($piecePricingResult['total_cost']);
 
         return view('estimate-sandbox', [
             'input' => $validated,

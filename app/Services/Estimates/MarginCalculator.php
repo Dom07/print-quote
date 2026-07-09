@@ -7,8 +7,14 @@ use RuntimeException;
 
 class MarginCalculator
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function calculate(float $totalCost): array
     {
+        $totalCost = $this->rounder->money($totalCost);
         $slab = $this->resolveSlab($totalCost);
         $marginPercentage = (float) $slab->margin_percentage;
         $marginAmount = $totalCost * ($marginPercentage / 100);
@@ -20,8 +26,8 @@ class MarginCalculator
             'min_value' => $slab->min_amount === null ? null : (float) $slab->min_amount,
             'max_value' => $slab->max_amount === null ? null : (float) $slab->max_amount,
             'margin_percentage' => $marginPercentage,
-            'margin_amount' => $this->money($marginAmount),
-            'total_cost_with_margin' => $this->money($totalCostWithMargin),
+            'margin_amount' => $this->rounder->money($marginAmount),
+            'total_cost_with_margin' => $this->rounder->money($totalCostWithMargin),
         ];
     }
 
@@ -56,10 +62,5 @@ class MarginCalculator
         }
 
         return $slab;
-    }
-
-    private function money(float $value): float
-    {
-        return round($value, 2, PHP_ROUND_HALF_UP);
     }
 }

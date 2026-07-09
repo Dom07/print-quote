@@ -197,14 +197,14 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Margin Amount')
         ->assertSee('Total Cost With Margin')
         ->assertSee('4000')
-        ->assertSee('875.63')
+        ->assertSee('875.64')
         ->assertSee('0.06')
         ->assertSee('875.80')
-        ->assertSee('3,503,189.19')
+        ->assertSee('3,503,200.00')
         ->assertSee('Above 3.5 Lac')
         ->assertSee('10.0000%')
-        ->assertSee('350,318.92')
-        ->assertSee('3,853,508.10')
+        ->assertSee('350,320.00')
+        ->assertSee('3,853,520.00')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Punching Rate')
         ->assertSee('Lamination Value')
@@ -238,11 +238,11 @@ test('sandbox total cost with margin is calculated from total cost plus margin a
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem))
         ->assertOk()
         ->assertSee('Total Cost')
-        ->assertSee('3,503,189.19')
+        ->assertSee('3,503,200.00')
         ->assertSee('Margin Amount')
-        ->assertSee('350,318.92')
+        ->assertSee('350,320.00')
         ->assertSee('Total Cost With Margin')
-        ->assertSee('3,853,508.10');
+        ->assertSee('3,853,520.00');
 });
 
 test('checked apply lace uses the db pricing item rate in total piece cost', function () {
@@ -259,7 +259,7 @@ test('checked apply lace uses the db pricing item rate in total piece cost', fun
         ->assertSee('0.10')
         ->assertSee('Total Piece Cost')
         ->assertSee('876.47')
-        ->assertSee('3,505,869.19');
+        ->assertSee('3,505,880.00');
 });
 
 test('unchecked apply lace contributes zero to final price per piece', function () {
@@ -303,7 +303,7 @@ test('new job uses manual new job punch cost', function () {
         ->assertSee('Punch Cost Job Type')
         ->assertSee('New Job')
         ->assertSee('3.25')
-        ->assertSee('878.98');
+        ->assertSee('878.99');
 });
 
 test('expenses are included in total piece cost', function () {

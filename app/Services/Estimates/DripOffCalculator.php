@@ -8,6 +8,11 @@ use RuntimeException;
 
 class DripOffCalculator
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function calculate(float $length, float $width, int $quantity): array
     {
         if ($quantity === 0) {
@@ -18,17 +23,17 @@ class DripOffCalculator
         $minimumCost = $this->rateFor('drip-off-minimum-charge');
         $flatAddOnAmount = $this->rateFor('drip-off-setup-charge');
 
-        $baseRatePerSheet = ($length * $width * $coefficient) / 100;
-        $baseCost = $baseRatePerSheet * $quantity;
-        $minimumAdjustedBaseCost = max($minimumCost, $baseCost);
-        $minimumAdjustedBaseRatePerSheet = $minimumAdjustedBaseCost / $quantity;
-        $flatAddOnRatePerSheet = $flatAddOnAmount / $quantity;
-        $finalRatePerSheet = $minimumAdjustedBaseRatePerSheet + $flatAddOnRatePerSheet;
+        $baseRatePerSheet = $this->rounder->money(($length * $width * $coefficient) / 100);
+        $baseCost = $this->rounder->money($baseRatePerSheet * $quantity);
+        $minimumAdjustedBaseCost = $this->rounder->money(max($minimumCost, $baseCost));
+        $minimumAdjustedBaseRatePerSheet = $this->rounder->money($minimumAdjustedBaseCost / $quantity);
+        $flatAddOnRatePerSheet = $this->rounder->money($flatAddOnAmount / $quantity);
+        $finalRatePerSheet = $this->rounder->money($minimumAdjustedBaseRatePerSheet + $flatAddOnRatePerSheet);
 
         return [
             'coefficient' => $coefficient,
-            'minimum_cost' => $minimumCost,
-            'flat_add_on_amount' => $flatAddOnAmount,
+            'minimum_cost' => $this->rounder->money($minimumCost),
+            'flat_add_on_amount' => $this->rounder->money($flatAddOnAmount),
             'quantity' => $quantity,
             'base_rate_per_sheet' => $baseRatePerSheet,
             'base_cost' => $baseCost,

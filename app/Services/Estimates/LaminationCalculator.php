@@ -7,6 +7,11 @@ use App\Models\PricingRule;
 
 class LaminationCalculator
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function calculate(
         string $mode,
         ?PricingItem $frontPricingItem,
@@ -26,7 +31,7 @@ class LaminationCalculator
             'mode' => $mode,
             'front' => $front,
             'back' => $back,
-            'combined_value' => ($front['value'] ?? 0.0) + ($back['value'] ?? 0.0),
+            'combined_value' => $this->rounder->money(($front['value'] ?? 0.0) + ($back['value'] ?? 0.0)),
         ];
     }
 
@@ -38,7 +43,7 @@ class LaminationCalculator
             return null;
         }
 
-        $value = ($length * $width * $resolved['coefficient']) / 100;
+        $value = $this->rounder->money(($length * $width * $resolved['coefficient']) / 100);
 
         return [
             'name' => $pricingItem->name,

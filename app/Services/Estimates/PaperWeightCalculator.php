@@ -4,6 +4,11 @@ namespace App\Services\Estimates;
 
 class PaperWeightCalculator
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function forNoOfSheets(array $input): float
     {
         return $this->calculate(
@@ -45,6 +50,6 @@ class PaperWeightCalculator
         $value2 = $value1 / 5;
         $value3 = 100 / $value2;
 
-        return $sheetCount / $value3;
+        return $this->rounder->quantity($sheetCount / $value3);
     }
 }

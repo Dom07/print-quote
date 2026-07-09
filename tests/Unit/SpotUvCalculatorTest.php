@@ -23,7 +23,7 @@ test('spot uv below threshold uses minimum divided by quantity', function () {
     expect($result['name'])->toBe('Spot UV')
         ->and($result['resolved_amount'])->toBe(1250.0)
         ->and($result['calculation_type'])->toBe('minimum_divided_by_quantity')
-        ->and(abs($result['value'] - (1250 / 999)))->toBeLessThan(0.000001);
+        ->and($result['value'])->toBe(1.25);
 });
 
 test('spot uv exact threshold uses minimum divided by quantity', function () {
@@ -53,7 +53,7 @@ test('raised uv below threshold uses minimum divided by quantity', function () {
     expect($result['name'])->toBe('Raised UV')
         ->and($result['resolved_amount'])->toBe(2800.0)
         ->and($result['calculation_type'])->toBe('minimum_divided_by_quantity')
-        ->and(abs($result['value'] - (2800 / 999)))->toBeLessThan(0.000001);
+        ->and($result['value'])->toBe(2.8);
 });
 
 test('raised uv exact threshold uses minimum divided by quantity', function () {

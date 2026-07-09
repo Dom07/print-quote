@@ -7,6 +7,11 @@ use App\Models\PricingRule;
 
 class PunchingRateResolver
 {
+    public function __construct(private ?EstimateRounder $rounder = null)
+    {
+        $this->rounder ??= new EstimateRounder;
+    }
+
     public function resolve(?PricingItem $pricingItem, int $quantity): ?array
     {
         if ($pricingItem === null) {
@@ -23,7 +28,7 @@ class PunchingRateResolver
         if ($rule !== null) {
             return [
                 'name' => $pricingItem->name,
-                'rate' => (float) $rule->rate,
+                'rate' => $this->rounder->money((float) $rule->rate),
                 'source' => 'rule',
             ];
         }
@@ -34,7 +39,7 @@ class PunchingRateResolver
 
         return [
             'name' => $pricingItem->name,
-            'rate' => (float) $pricingItem->rate,
+            'rate' => $this->rounder->money((float) $pricingItem->rate),
             'source' => 'item',
         ];
     }

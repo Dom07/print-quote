@@ -7,7 +7,7 @@ test('it calculates paper kilograms for a known sheet count', function () {
 
     $result = $calculator->calculate(length: 20, width: 30, gsm: 100, sheetCount: 1000);
 
-    expect(round($result, 4))->toBe(38.7097);
+    expect($result)->toBe(38.71);
 });
 
 test('it returns zero kilograms when sheet count is zero', function () {
