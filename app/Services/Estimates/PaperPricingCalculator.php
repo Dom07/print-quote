@@ -27,7 +27,7 @@ class PaperPricingCalculator
         $pricePerSheet = $this->rounder->money($orderPaperCost / $noOfSheets);
 
         return [
-            'selected_paper_rate' => $selectedPaperRate,
+            'effective_paper_rate' => $selectedPaperRate,
             'interest_percentage' => $interestPercentage,
             'updated_paper_rate' => $updatedPaperRate,
             'price_per_sheet' => $pricePerSheet,

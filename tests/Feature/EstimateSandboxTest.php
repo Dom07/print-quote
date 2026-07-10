@@ -32,6 +32,9 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('name="no_of_sheets_with_wastage"', false)
         ->assertSee('name="no_of_sheets_to_process"', false)
         ->assertSee('name="paper_pricing_item_id"', false)
+        ->assertSee('type="hidden" name="override_paper_rate" value="0"', false)
+        ->assertSee('id="override_paper_rate" name="override_paper_rate" type="checkbox" value="1"', false)
+        ->assertSee('name="overridden_paper_rate"', false)
         ->assertSee('name="interest_pricing_item_id"', false)
         ->assertSee('Paper Rate')
         ->assertSee('Grey Back ORD')
@@ -231,6 +234,8 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'new_job_punch_cost' => '',
         'expenses' => 0,
         'paper_pricing_item_id' => $paperItem->id,
+        'override_paper_rate' => 0,
+        'overridden_paper_rate' => null,
         'interest_pricing_item_id' => $interestItem->id,
     ])
         ->assertOk()
@@ -242,7 +247,9 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertDontSee('46.4516')
         ->assertSee('KG for Sheets With Wastage')
         ->assertSee('Paper Pricing')
-        ->assertSee('Selected Paper Rate')
+        ->assertSee('Selected Paper')
+        ->assertSee('Configured Paper Rate')
+        ->assertSee('Effective Paper Rate')
         ->assertSee('Interest %')
         ->assertSee('Updated Paper Rate')
         ->assertSee('Price Per Sheet')
@@ -1163,6 +1170,52 @@ test('estimate sandbox validates invalid spot uv selection', function () {
         ]);
 });
 
+test('paper rate override uses the submitted rate and applies interest to it', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'override_paper_rate' => '1',
+        'overridden_paper_rate' => '50',
+    ]))
+        ->assertOk()
+        ->assertSee('Paper Rate Overridden')
+        ->assertSee('Yes')
+        ->assertSee('Configured Paper Rate')
+        ->assertSee('Effective Paper Rate')
+        ->assertSee('₹41.50')
+        ->assertSee('₹50.00')
+        ->assertSee('₹50.63');
+});
+
+test('disabled paper rate override ignores a submitted override value', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'override_paper_rate' => '0',
+        'overridden_paper_rate' => '50',
+    ]))
+        ->assertOk()
+        ->assertSee('Paper Rate Overridden')
+        ->assertSee('No')
+        ->assertSee('₹41.50')
+        ->assertSee('₹42.02')
+        ->assertDontSee('₹50.00');
+});
+
+test('enabled paper rate override validates its rate', function (mixed $value) {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'override_paper_rate' => '1',
+        'overridden_paper_rate' => $value,
+    ]))->assertInvalid('overridden_paper_rate');
+})->with([
+    'missing' => null,
+    'zero' => 0,
+    'negative' => -1,
+    'nonnumeric' => 'not-a-rate',
+]);
+
 function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, array $overrides = []): array
 {
     return array_merge([
@@ -1187,6 +1240,8 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'new_job_punch_cost' => '',
         'expenses' => 0,
         'paper_pricing_item_id' => $paperItem->id,
+        'override_paper_rate' => '0',
+        'overridden_paper_rate' => null,
         'interest_pricing_item_id' => $interestItem->id,
     ], $overrides);
 }

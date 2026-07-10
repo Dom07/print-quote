@@ -12,7 +12,7 @@ test('it calculates paper pricing values', function () {
         noOfSheets: 1000,
     );
 
-    expect($result['selected_paper_rate'])->toBe(41.5)
+    expect($result['effective_paper_rate'])->toBe(41.5)
         ->and($result['interest_percentage'])->toBe(1.25)
         ->and($result['updated_paper_rate'])->toBe(42.02)
         ->and($result['price_per_sheet'])->toBe(0.42);

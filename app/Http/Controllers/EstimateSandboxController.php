@@ -55,6 +55,11 @@ class EstimateSandboxController extends Controller
 
         $selectedPaperItem = PricingItem::findOrFail($validated['paper_pricing_item_id']);
         $selectedInterestItem = PricingItem::findOrFail($validated['interest_pricing_item_id']);
+        $configuredPaperRate = (float) $selectedPaperItem->rate;
+        $isPaperRateOverridden = (bool) $validated['override_paper_rate'];
+        $effectivePaperRate = $isPaperRateOverridden
+            ? (float) $validated['overridden_paper_rate']
+            : $configuredPaperRate;
         $needsFoiling = (bool) $validated['needs_foiling'];
         $needsPunching = (bool) $validated['needs_punching'];
         $needsLamination = (bool) $validated['needs_lamination'];
@@ -74,12 +79,16 @@ class EstimateSandboxController extends Controller
         $selectedSpotUvItem = $needsSpotUv && isset($validated['spot_uv_pricing_item_id'])
             ? PricingItem::findOrFail($validated['spot_uv_pricing_item_id'])
             : null;
-        $paperPricingResult = $pricingCalculator->calculate(
-            selectedPaperRate: (float) $selectedPaperItem->rate,
+        $paperPricingResult = array_merge($pricingCalculator->calculate(
+            selectedPaperRate: $effectivePaperRate,
             interestPercentage: (float) $selectedInterestItem->rate,
             kgsOfOrder: $kgResult['no_of_sheets_with_wastage'],
             noOfSheets: (int) $validated['no_of_sheets'],
-        );
+        ), [
+            'configured_paper_rate' => $configuredPaperRate,
+            'is_paper_rate_overridden' => $isPaperRateOverridden,
+            'overridden_paper_rate' => $isPaperRateOverridden ? (float) $validated['overridden_paper_rate'] : null,
+        ]);
         $punchingRateResult = $needsPunching
             ? $punchingRateResolver->resolve(
                 pricingItem: $selectedPunchingItem,

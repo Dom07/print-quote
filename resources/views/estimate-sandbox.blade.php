@@ -18,6 +18,7 @@
         $totalPricePerSheetResult = $totalPricePerSheetResult ?? null;
         $piecePricingResult = $piecePricingResult ?? null;
         $marginResult = $marginResult ?? null;
+        $selectedPaperItem = $selectedPaperItem ?? null;
         $selectedPunchingItem = $selectedPunchingItem ?? null;
         $selectedFrontLaminationItem = $selectedFrontLaminationItem ?? null;
         $selectedBackLaminationItem = $selectedBackLaminationItem ?? null;
@@ -45,6 +46,7 @@
             default => '-',
         };
         $needsFoiling = (string) $fieldValue('needs_foiling') === '1';
+        $isPaperRateOverridden = (string) $fieldValue('override_paper_rate') === '1';
         $needsPunching = (string) $fieldValue('needs_punching') === '1';
         $needsLamination = (string) $fieldValue('needs_lamination') === '1';
         $needsSpotUv = (string) $fieldValue('needs_spot_uv') === '1';
@@ -138,6 +140,25 @@
                                 @error('paper_pricing_item_id')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
+                            </div>
+
+                            <div class="form-group">
+                                <label class="addon-card__checkbox" for="override_paper_rate">
+                                    <input type="hidden" name="override_paper_rate" value="0">
+                                    <input class="form-check-input" id="override_paper_rate" name="override_paper_rate" type="checkbox" value="1" data-override-paper-rate @checked($isPaperRateOverridden)>
+                                    Override Paper Rate
+                                </label>
+                                @error('override_paper_rate')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+
+                                <div class="{{ $isPaperRateOverridden ? '' : 'is-hidden' }}" data-overridden-paper-rate-details>
+                                    <label class="form-label" for="overridden_paper_rate">Overridden Paper Rate</label>
+                                    <input class="form-input" id="overridden_paper_rate" name="overridden_paper_rate" type="number" step="any" min="0" value="{{ $fieldValue('overridden_paper_rate') }}">
+                                    @error('overridden_paper_rate')
+                                        <p class="form-error">{{ $message }}</p>
+                                    @enderror
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -498,8 +519,30 @@
 
                         <div class="result-stack">
                             <div class="result-item">
-                                <span class="result-label">Selected Paper Rate</span>
-                                <span class="result-value">{{ $formatMoney($paperPricingResult['selected_paper_rate'] ?? null) }}</span>
+                                <span class="result-label">Selected Paper</span>
+                                <span class="result-value">{{ $selectedPaperItem->name ?? '-' }}</span>
+                            </div>
+
+                            <div class="result-item">
+                                <span class="result-label">Configured Paper Rate</span>
+                                <span class="result-value">{{ $formatMoney($paperPricingResult['configured_paper_rate'] ?? null) }}</span>
+                            </div>
+
+                            <div class="result-item">
+                                <span class="result-label">Paper Rate Overridden</span>
+                                <span class="result-value">{{ ($paperPricingResult['is_paper_rate_overridden'] ?? false) ? 'Yes' : 'No' }}</span>
+                            </div>
+
+                            @if ($paperPricingResult['is_paper_rate_overridden'] ?? false)
+                                <div class="result-item">
+                                    <span class="result-label">Overridden Paper Rate</span>
+                                    <span class="result-value">{{ $formatMoney($paperPricingResult['overridden_paper_rate'] ?? null) }}</span>
+                                </div>
+                            @endif
+
+                            <div class="result-item">
+                                <span class="result-label">Effective Paper Rate</span>
+                                <span class="result-value">{{ $formatMoney($paperPricingResult['effective_paper_rate'] ?? null) }}</span>
                             </div>
 
                             <div class="result-item">
@@ -898,6 +941,8 @@
         };
 
         const needsFoiling = document.querySelector('[data-needs-foiling]');
+        const overridePaperRate = document.querySelector('[data-override-paper-rate]');
+        const overriddenPaperRateDetails = document.querySelectorAll('[data-overridden-paper-rate-details]');
         const foilingDetails = document.querySelectorAll('[data-foiling-details]');
         const needsPunching = document.querySelector('[data-needs-punching]');
         const punchingDetails = document.querySelectorAll('[data-punching-details]');
@@ -912,6 +957,10 @@
 
         const syncFoiling = () => {
             toggle(foilingDetails, needsFoiling?.checked === true);
+        };
+
+        const syncPaperRateOverride = () => {
+            toggle(overriddenPaperRateDetails, overridePaperRate?.checked === true);
         };
 
         const syncPunching = () => {
@@ -933,6 +982,7 @@
         };
 
         needsFoiling?.addEventListener('change', syncFoiling);
+        overridePaperRate?.addEventListener('change', syncPaperRateOverride);
         needsPunching?.addEventListener('change', syncPunching);
         needsLamination?.addEventListener('change', syncLamination);
         laminationMode?.addEventListener('change', syncLamination);
@@ -940,6 +990,7 @@
         punchCostJobType?.addEventListener('change', syncNewJobPunchCost);
 
         syncFoiling();
+        syncPaperRateOverride();
         syncPunching();
         syncLamination();
         syncSpotUv();

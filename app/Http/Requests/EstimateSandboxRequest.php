@@ -29,6 +29,8 @@ class EstimateSandboxRequest extends FormRequest
             'needs_foiling' => ['required', 'boolean'],
             'foiling_cost' => ['nullable', 'required_if:needs_foiling,1', 'numeric', 'min:0'],
             'needs_punching' => ['required', 'boolean'],
+            'override_paper_rate' => ['required', 'boolean'],
+            'overridden_paper_rate' => ['nullable', 'required_if:override_paper_rate,1', 'numeric', 'gt:0'],
             'paper_pricing_item_id' => [
                 'required',
                 Rule::exists('pricing_items', 'id'),
@@ -95,6 +97,8 @@ class EstimateSandboxRequest extends FormRequest
             'needs_foiling' => 'apply foiling',
             'foiling_cost' => 'foiling cost',
             'needs_punching' => 'need punching',
+            'override_paper_rate' => 'override paper rate',
+            'overridden_paper_rate' => 'overridden paper rate',
             'paper_pricing_item_id' => 'paper rate',
             'interest_pricing_item_id' => 'interest slab',
             'punching_pricing_item_id' => 'punching type',
