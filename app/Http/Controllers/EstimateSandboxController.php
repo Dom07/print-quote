@@ -9,6 +9,7 @@ use App\Services\Estimates\LaminationCalculator;
 use App\Services\Estimates\MarginCalculator;
 use App\Services\Estimates\PaperPricingCalculator;
 use App\Services\Estimates\PaperWeightCalculator;
+use App\Services\Estimates\PastingRateResolver;
 use App\Services\Estimates\PieceLevelAddonResolver;
 use App\Services\Estimates\PiecePricingCalculator;
 use App\Services\Estimates\PunchingRateResolver;
@@ -39,6 +40,7 @@ class EstimateSandboxController extends Controller
         LaminationCalculator $laminationCalculator,
         SpotUvCalculator $spotUvCalculator,
         DripOffCalculator $dripOffCalculator,
+        PastingRateResolver $pastingRateResolver,
         TotalPricePerSheetCalculator $totalPricePerSheetCalculator,
         PieceLevelAddonResolver $pieceLevelAddonResolver,
         RequiredPieceCostResolver $requiredPieceCostResolver,
@@ -65,6 +67,7 @@ class EstimateSandboxController extends Controller
         $needsLamination = (bool) $validated['needs_lamination'];
         $needsSpotUv = (bool) $validated['needs_spot_uv'];
         $needsDripOff = (bool) $validated['needs_drip_off'];
+        $needsPasting = (bool) $validated['needs_pasting'];
         $needsLaceCost = (bool) $validated['needs_lace_cost'];
         $punchCostJobType = $validated['punch_cost_job_type'];
         $selectedPunchingItem = $needsPunching && isset($validated['punching_pricing_item_id'])
@@ -118,6 +121,12 @@ class EstimateSandboxController extends Controller
                 quantity: (int) $validated['no_of_sheets_to_process'],
             )
             : null;
+        $pastingResult = $needsPasting
+            ? $pastingRateResolver->resolve(
+                pastingSides: $validated['pasting_sides'],
+                withChecking: (bool) $validated['needs_pasting_checking'],
+            )
+            : null;
         $totalPricePerSheetResult = $totalPricePerSheetCalculator->calculate(
             paperPricePerSheet: $paperPricingResult['price_per_sheet'],
             printingCost: (float) $validated['printing_cost'],
@@ -127,6 +136,7 @@ class EstimateSandboxController extends Controller
             laminationValue: $laminationResult['combined_value'] ?? null,
             spotUvValue: $spotUvResult['value'] ?? null,
             dripOffRate: $dripOffResult['final_rate_per_sheet'] ?? null,
+            pastingRate: $pastingResult['rate'] ?? null,
         );
         $piecePricingResult = $piecePricingCalculator->calculate(
             noOfSheets: (int) $validated['no_of_sheets'],
@@ -161,6 +171,7 @@ class EstimateSandboxController extends Controller
             'laminationResult' => $laminationResult,
             'spotUvResult' => $spotUvResult,
             'dripOffResult' => $dripOffResult,
+            'pastingResult' => $pastingResult,
             'totalPricePerSheetResult' => $totalPricePerSheetResult,
             'piecePricingResult' => $piecePricingResult,
             'marginResult' => $marginResult,

@@ -15,6 +15,7 @@
         $laminationResult = $laminationResult ?? null;
         $spotUvResult = $spotUvResult ?? null;
         $dripOffResult = $dripOffResult ?? null;
+        $pastingResult = $pastingResult ?? null;
         $totalPricePerSheetResult = $totalPricePerSheetResult ?? null;
         $piecePricingResult = $piecePricingResult ?? null;
         $marginResult = $marginResult ?? null;
@@ -51,6 +52,8 @@
         $needsLamination = (string) $fieldValue('needs_lamination') === '1';
         $needsSpotUv = (string) $fieldValue('needs_spot_uv') === '1';
         $needsDripOff = (string) $fieldValue('needs_drip_off') === '1';
+        $needsPasting = (string) $fieldValue('needs_pasting') === '1';
+        $needsPastingChecking = (string) $fieldValue('needs_pasting_checking') === '1';
         $needsLaceCost = (string) $fieldValue('needs_lace_cost') === '1';
         $punchCostJobType = $fieldValue('punch_cost_job_type');
         $showNewJobPunchCost = $punchCostJobType === 'new_job';
@@ -383,6 +386,46 @@
                                         @error('needs_drip_off')
                                             <p class="form-error">{{ $message }}</p>
                                         @enderror
+                                    </section>
+
+                                    <section class="addon-card" aria-labelledby="pasting-addon-title">
+                                        <div class="addon-card__header">
+                                            <div>
+                                                <h3 class="addon-card__title" id="pasting-addon-title">Pasting</h3>
+                                                <p class="addon-card__description">Add a per-sheet pasting process.</p>
+                                            </div>
+                                            <label class="addon-card__checkbox" for="needs_pasting">
+                                                <input type="hidden" name="needs_pasting" value="0">
+                                                <input class="form-check-input" id="needs_pasting" name="needs_pasting" type="checkbox" value="1" data-needs-pasting @checked($needsPasting)>
+                                                <span>Apply Pasting</span>
+                                            </label>
+                                        </div>
+                                        @error('needs_pasting')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+
+                                        <div class="addon-card__body {{ $needsPasting ? '' : 'is-hidden' }}" data-pasting-details>
+                                            <div class="form-group">
+                                                <label class="form-label" for="pasting_sides">Pasting Type</label>
+                                                <select class="form-input" id="pasting_sides" name="pasting_sides">
+                                                    <option value="">Select pasting type</option>
+                                                    <option value="four_sides" @selected($fieldValue('pasting_sides') === 'four_sides')>4 Sides</option>
+                                                    <option value="eight_sides" @selected($fieldValue('pasting_sides') === 'eight_sides')>8 Sides</option>
+                                                </select>
+                                                @error('pasting_sides')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            <label class="addon-card__checkbox mt-5 ms-1" for="needs_pasting_checking">
+                                                <input type="hidden" name="needs_pasting_checking" value="0">
+                                                <input class="form-check-input" id="needs_pasting_checking" name="needs_pasting_checking" type="checkbox" value="1" @checked($needsPastingChecking)>
+                                                <span>Include Checking</span>
+                                            </label>
+                                            @error('needs_pasting_checking')
+                                                <p class="form-error">{{ $message }}</p>
+                                            @enderror
+                                        </div>
                                     </section>
                                 </div>
                             </section>
@@ -780,6 +823,25 @@
                             @endif
                         </div>
 
+                        @if ($needsPasting)
+                            <h3 class="result-section-title">Pasting</h3>
+
+                            <div class="result-stack">
+                                <div class="result-item">
+                                    <span class="result-label">Pasting Type</span>
+                                    <span class="result-value">{{ $pastingResult['pasting_sides_label'] ?? '-' }}</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Checking Included</span>
+                                    <span class="result-value">{{ ($pastingResult['with_checking'] ?? false) ? 'Yes' : 'No' }}</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Selected Pasting Rate</span>
+                                    <span class="result-value">{{ $formatMoney($pastingResult['rate'] ?? null) }}</span>
+                                </div>
+                            </div>
+                        @endif
+
                         @if ($totalPricePerSheetResult !== null)
                             <h3 class="result-section-title">Total Price Per Sheet</h3>
 
@@ -822,6 +884,11 @@
                                 <div class="result-item">
                                     <span class="result-label">Drip Off Rate</span>
                                     <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['drip_off_rate'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Pasting Rate</span>
+                                    <span class="result-value">{{ $formatMoney($totalPricePerSheetResult['components']['pasting_rate'] ?? null) }}</span>
                                 </div>
 
                                 <div class="result-item result-item--total">
@@ -952,6 +1019,8 @@
         const laminationBackSide = document.querySelectorAll('[data-lamination-back-side]');
         const needsSpotUv = document.querySelector('[data-needs-spot-uv]');
         const spotUvDetails = document.querySelectorAll('[data-spot-uv-details]');
+        const needsPasting = document.querySelector('[data-needs-pasting]');
+        const pastingDetails = document.querySelectorAll('[data-pasting-details]');
         const punchCostJobType = document.querySelector('[data-punch-cost-job-type]');
         const newJobPunchCost = document.querySelectorAll('[data-new-job-punch-cost]');
 
@@ -977,6 +1046,10 @@
             toggle(spotUvDetails, needsSpotUv?.checked === true);
         };
 
+        const syncPasting = () => {
+            toggle(pastingDetails, needsPasting?.checked === true);
+        };
+
         const syncNewJobPunchCost = () => {
             toggle(newJobPunchCost, punchCostJobType?.value === 'new_job');
         };
@@ -987,6 +1060,7 @@
         needsLamination?.addEventListener('change', syncLamination);
         laminationMode?.addEventListener('change', syncLamination);
         needsSpotUv?.addEventListener('change', syncSpotUv);
+        needsPasting?.addEventListener('change', syncPasting);
         punchCostJobType?.addEventListener('change', syncNewJobPunchCost);
 
         syncFoiling();
@@ -994,6 +1068,7 @@
         syncPunching();
         syncLamination();
         syncSpotUv();
+        syncPasting();
         syncNewJobPunchCost();
     })();
 </script>

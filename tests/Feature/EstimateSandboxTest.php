@@ -87,6 +87,10 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('name="needs_spot_uv"', false)
         ->assertSee('name="spot_uv_pricing_item_id"', false)
         ->assertSee('name="needs_drip_off"', false)
+        ->assertSee('name="needs_pasting"', false)
+        ->assertSee('name="pasting_sides"', false)
+        ->assertSee('name="needs_pasting_checking"', false)
+        ->assertSee('Add a per-sheet pasting process.')
         ->assertSee('Apply spot UV or raised UV cost to processed sheets.')
         ->assertSee('Apply Spot UV')
         ->assertSee('type="hidden" name="needs_spot_uv" value="0"', false)
@@ -228,6 +232,9 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'needs_lamination' => 0,
         'needs_spot_uv' => 0,
         'needs_drip_off' => 0,
+        'needs_pasting' => 0,
+        'pasting_sides' => null,
+        'needs_pasting_checking' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
         'punch_cost_job_type' => 'repeat_job',
@@ -1216,6 +1223,49 @@ test('enabled paper rate override validates its rate', function (mixed $value) {
     'nonnumeric' => 'not-a-rate',
 ]);
 
+test('enabled pasting requires a pasting type', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_pasting' => '1',
+        'pasting_sides' => null,
+    ]))->assertInvalid('pasting_sides');
+});
+
+test('disabled pasting ignores submitted selections', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_pasting' => '0',
+        'pasting_sides' => 'eight_sides',
+        'needs_pasting_checking' => '1',
+    ]))
+        ->assertOk()
+        ->assertDontSee('Selected Pasting Rate')
+        ->assertSee('Pasting Rate')
+        ->assertSee('₹0.00');
+});
+
+test('pasting combinations use their configured per-sheet rates', function (string $sides, string $checking, string $label, string $formattedRate) {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_pasting' => '1',
+        'pasting_sides' => $sides,
+        'needs_pasting_checking' => $checking,
+    ]))
+        ->assertOk()
+        ->assertSee('Selected Pasting Rate')
+        ->assertSee($label)
+        ->assertSee($checking === '1' ? 'Yes' : 'No')
+        ->assertSee($formattedRate);
+})->with([
+    ['four_sides', '0', '4 Sides', '₹0.40'],
+    ['four_sides', '1', '4 Sides', '₹0.45'],
+    ['eight_sides', '0', '8 Sides', '₹0.90'],
+    ['eight_sides', '1', '8 Sides', '₹1.00'],
+]);
+
 function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, array $overrides = []): array
 {
     return array_merge([
@@ -1234,6 +1284,9 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'needs_lamination' => 0,
         'needs_spot_uv' => 0,
         'needs_drip_off' => 0,
+        'needs_pasting' => '0',
+        'pasting_sides' => null,
+        'needs_pasting_checking' => '0',
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
         'punch_cost_job_type' => 'repeat_job',
@@ -1594,6 +1647,29 @@ function seedSandboxPricingItems(): array
         'is_selectable' => true,
         'is_active' => true,
     ]);
+
+    $pastingCategory = PricingCategory::create([
+        'name' => 'Pasting',
+        'slug' => 'pasting',
+        'is_active' => true,
+    ]);
+
+    foreach ([
+        ['4 Sides Pasting', 'four-sides-pasting', '0.4000'],
+        ['4 Sides Pasting With Checking', 'four-sides-pasting-with-checking', '0.4500'],
+        ['8 Sides Pasting', 'eight-sides-pasting', '0.9000'],
+        ['8 Sides Pasting With Checking', 'eight-sides-pasting-with-checking', '1.0000'],
+    ] as [$name, $slug, $rate]) {
+        PricingItem::create([
+            'pricing_category_id' => $pastingCategory->id,
+            'name' => $name,
+            'slug' => $slug,
+            'rate' => $rate,
+            'rate_type' => 'per_sheet',
+            'is_selectable' => false,
+            'is_active' => true,
+        ]);
+    }
 
     PricingItem::create([
         'pricing_category_id' => $addOnCategory->id,

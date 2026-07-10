@@ -79,6 +79,9 @@ class EstimateSandboxRequest extends FormRequest
                 $this->pricingItemRule('spot-uv', ['Spot UV', 'Raised UV']),
             ],
             'needs_drip_off' => ['required', 'boolean'],
+            'needs_pasting' => ['required', 'boolean'],
+            'pasting_sides' => ['nullable', 'required_if:needs_pasting,1', Rule::in(['four_sides', 'eight_sides'])],
+            'needs_pasting_checking' => ['required', 'boolean'],
         ];
     }
 
@@ -114,6 +117,9 @@ class EstimateSandboxRequest extends FormRequest
             'needs_spot_uv' => 'need spot UV',
             'spot_uv_pricing_item_id' => 'UV type',
             'needs_drip_off' => 'need drip off',
+            'needs_pasting' => 'apply pasting',
+            'pasting_sides' => 'pasting type',
+            'needs_pasting_checking' => 'include checking',
         ];
     }
 

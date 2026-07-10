@@ -22,6 +22,7 @@ class PricingCategorySeeder extends Seeder
             ['name' => 'Spot UV', 'slug' => 'spot-uv'],
             ['name' => 'Drip Off', 'slug' => 'drip-off'],
             ['name' => 'Foiling', 'slug' => 'foiling'],
+            ['name' => 'Pasting', 'slug' => 'pasting'],
             ['name' => 'Add-on Costs', 'slug' => 'add-on-costs'],
             ['name' => 'Required Costs', 'slug' => 'required-costs'],
             ['name' => 'Operational Expenses', 'slug' => 'operational-expenses'],

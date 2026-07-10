@@ -18,6 +18,7 @@ class TotalPricePerSheetCalculator
         ?float $laminationValue = null,
         ?float $spotUvValue = null,
         ?float $dripOffRate = null,
+        ?float $pastingRate = null,
     ): array {
         $components = [
             'paper_price_per_sheet' => $this->rounder->money($paperPricePerSheet),
@@ -28,6 +29,7 @@ class TotalPricePerSheetCalculator
             'lamination_value' => $this->rounder->money($laminationValue ?? 0.0),
             'spot_uv_value' => $this->rounder->money($spotUvValue ?? 0.0),
             'drip_off_rate' => $this->rounder->money($dripOffRate ?? 0.0),
+            'pasting_rate' => $this->rounder->money($pastingRate ?? 0.0),
         ];
 
         return [
