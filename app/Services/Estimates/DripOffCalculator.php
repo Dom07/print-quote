@@ -25,8 +25,8 @@ class DripOffCalculator
 
         $baseRatePerSheet = $this->rounder->money(($length * $width * $coefficient) / 100);
         $baseCost = $this->rounder->money($baseRatePerSheet * $quantity);
-        $minimumAdjustedBaseCost = $this->rounder->money(max($minimumCost, $baseCost));
-        $minimumAdjustedBaseRatePerSheet = $minimumAdjustedBaseCost >= $minimumCost 
+        $minimumAdjustedBaseCost = $this->rounder->money(max($minimumCost, $baseCost)); // this is only for display...
+        $minimumAdjustedBaseRatePerSheet = $baseCost >= $minimumCost 
             ? $baseRatePerSheet 
             : ($minimumCost / $quantity);
         $flatAddOnRatePerSheet = $this->rounder->money($flatAddOnAmount / $quantity);
