@@ -931,6 +931,11 @@
                                     <span class="result-label">Optional Piece Costs Total</span>
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['optional_piece_costs_total'] ?? null) }}</span>
                                 </div>
+                            </div>
+
+                            <h3 class="result-section-title">Required Piece Costs</h3>
+
+                            <div class="result-stack">
 
                                 <div class="result-item">
                                     <span class="result-label">Punch Cost Job Type</span>
@@ -952,11 +957,15 @@
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['expenses'] ?? null) }}</span>
                                 </div>
 
-                                <div class="result-item">
-                                    <span class="result-label">Compulsory Piece Costs Total</span>
-                                    <span class="result-value">{{ $formatMoney($piecePricingResult['compulsory_piece_costs_total'] ?? null) }}</span>
+                                <div class="result-item result-item--total">
+                                    <span class="result-label">Required Piece Costs Total</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['required_piece_costs_total'] ?? null) }}</span>
                                 </div>
+                            </div>
 
+                            <h3 class="result-section-title">Final Piece Totals</h3>
+
+                            <div class="result-stack">
                                 <div class="result-item result-item--total">
                                     <span class="result-label">Total Piece Cost</span>
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['total_piece_cost'] ?? null) }}</span>

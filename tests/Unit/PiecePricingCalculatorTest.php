@@ -92,7 +92,7 @@ test('it uses new job punch cost as a direct per piece value', function () {
         ->and($result['punch_cost'])->toBe(3.25);
 });
 
-test('it includes punch cost and expenses in compulsory piece costs total', function () {
+test('it includes punch cost and expenses in required piece costs total', function () {
     $result = (new PiecePricingCalculator)->calculate(
         noOfSheets: 1000,
         ups: 4,
@@ -106,7 +106,7 @@ test('it includes punch cost and expenses in compulsory piece costs total', func
     expect($result['expenses'])->toBe(0.75)
         ->and($result['punch_cost'])->toBe(0.06)
         ->and($result['designing_cost'])->toBe(0.1)
-        ->and($result['compulsory_piece_costs_total'])->toBe(0.91);
+        ->and($result['required_piece_costs_total'])->toBe(0.91);
 });
 
 test('it calculates total piece cost', function () {

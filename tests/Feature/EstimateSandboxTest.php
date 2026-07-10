@@ -291,7 +291,9 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Punch Cost Job Type')
         ->assertSee('Punch Cost')
         ->assertSee('Expenses')
-        ->assertSee('Compulsory Piece Costs Total')
+        ->assertSee('Required Piece Costs')
+        ->assertSee('Required Piece Costs Total')
+        ->assertSee('Final Piece Totals')
         ->assertSee('Total Piece Cost')
         ->assertSee('Total Cost')
         ->assertSee('Margin')
@@ -393,7 +395,7 @@ test('repeat job uses db repeat job punch cost divided by number of pieces', fun
         ->assertSee('0.06')
         ->assertSee('Designing Cost')
         ->assertSee('0.10')
-        ->assertSee('Compulsory Piece Costs Total');
+        ->assertSee('Required Piece Costs Total');
 });
 
 test('new job uses manual new job punch cost', function () {
@@ -419,7 +421,7 @@ test('expenses are included in total piece cost', function () {
         ->assertOk()
         ->assertSee('Expenses')
         ->assertSee('0.80')
-        ->assertSee('Compulsory Piece Costs Total')
+        ->assertSee('Required Piece Costs Total')
         ->assertSee('0.96')
         ->assertSee('Total Piece Cost')
         ->assertSee('876.60');

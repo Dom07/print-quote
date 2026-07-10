@@ -39,8 +39,8 @@ class PiecePricingCalculator
             default => throw new InvalidArgumentException('Punch cost job type must be repeat_job or new_job.'),
         };
         $expenses = $this->rounder->money($expenses);
-        $compulsoryPieceCostsTotal = $this->rounder->money($punchCost + $designingCost + $expenses);
-        $totalPieceCost = $this->rounder->money($basePricePerPiece + $optionalPieceCostsTotal + $compulsoryPieceCostsTotal);
+        $requiredPieceCostsTotal = $this->rounder->money($punchCost + $designingCost + $expenses);
+        $totalPieceCost = $this->rounder->money($basePricePerPiece + $optionalPieceCostsTotal + $requiredPieceCostsTotal);
 
         return [
             'ups' => $ups,
@@ -53,7 +53,7 @@ class PiecePricingCalculator
             'punch_cost_job_type' => $punchCostJobType,
             'punch_cost' => $punchCost,
             'expenses' => $expenses,
-            'compulsory_piece_costs_total' => $compulsoryPieceCostsTotal,
+            'required_piece_costs_total' => $requiredPieceCostsTotal,
             'total_piece_cost' => $totalPieceCost,
             'total_cost' => $this->rounder->money($totalPieceCost * $numberOfPieces),
         ];
