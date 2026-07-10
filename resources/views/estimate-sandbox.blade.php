@@ -140,24 +140,24 @@
                                 @error('paper_pricing_item_id')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
-                            </div>
 
-                            <div class="form-group">
-                                <label class="addon-card__checkbox" for="override_paper_rate">
-                                    <input type="hidden" name="override_paper_rate" value="0">
-                                    <input class="form-check-input" id="override_paper_rate" name="override_paper_rate" type="checkbox" value="1" data-override-paper-rate @checked($isPaperRateOverridden)>
-                                    Override Paper Rate
-                                </label>
-                                @error('override_paper_rate')
-                                    <p class="form-error">{{ $message }}</p>
-                                @enderror
-
-                                <div class="{{ $isPaperRateOverridden ? '' : 'is-hidden' }}" data-overridden-paper-rate-details>
-                                    <label class="form-label" for="overridden_paper_rate">Overridden Paper Rate</label>
-                                    <input class="form-input" id="overridden_paper_rate" name="overridden_paper_rate" type="number" step="any" min="0" value="{{ $fieldValue('overridden_paper_rate') }}">
-                                    @error('overridden_paper_rate')
+                                <div class="addon-card__body ms-1">
+                                    <label class="addon-card__checkbox" for="override_paper_rate">
+                                        <input type="hidden" name="override_paper_rate" value="0">
+                                        <input class="form-check-input" id="override_paper_rate" name="override_paper_rate" type="checkbox" value="1" data-override-paper-rate @checked($isPaperRateOverridden)>
+                                        Override Paper Rate
+                                    </label>
+                                    @error('override_paper_rate')
                                         <p class="form-error">{{ $message }}</p>
                                     @enderror
+
+                                    <div class="addon-card__body {{ $isPaperRateOverridden ? '' : 'is-hidden' }}" data-overridden-paper-rate-details>
+                                        <label class="form-label" for="overridden_paper_rate">Overridden Paper Rate</label>
+                                        <input class="form-input" id="overridden_paper_rate" name="overridden_paper_rate" type="number" step="any" min="0" value="{{ $fieldValue('overridden_paper_rate') }}">
+                                        @error('overridden_paper_rate')
+                                            <p class="form-error">{{ $message }}</p>
+                                        @enderror
+                                    </div>
                                 </div>
                             </div>
 
