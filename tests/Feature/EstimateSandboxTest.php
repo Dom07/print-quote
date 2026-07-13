@@ -27,6 +27,26 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('Inputs used after total price per sheet is calculated to determine piece cost, order total, and margin.')
         ->assertSee('name="length"', false)
         ->assertSee('name="width"', false)
+        ->assertSee('Measurement Unit')
+        ->assertSee('name="measurement_unit"', false)
+        ->assertSee('segmented-control measurement-unit-toggle', false)
+        ->assertSee('type="radio" name="measurement_unit" value="in" data-measurement-unit checked', false)
+        ->assertSee('type="radio" name="measurement_unit" value="cm" data-measurement-unit', false)
+        ->assertSee('data-measurement-unit-suffix', false)
+        ->assertSee('>in</span>', false)
+        ->assertSee('Not calculated')
+        ->assertSee('Entered Size')
+        ->assertSee('class="result-item"', false)
+        ->assertDontSee('Calculation Size')
+        ->assertDontSee('dimension-result-block', false)
+        ->assertDontSee('dimension-result__value', false)
+        ->assertSee('Length')
+        ->assertSee('Width')
+        ->assertDontSee('Length (')
+        ->assertDontSee('Width (')
+        ->assertDontSee('Ã—')
+        ->assertDontSee('Ãƒâ€”')
+        ->assertSee('value="cm"', false)
         ->assertSee('name="gsm"', false)
         ->assertSee('name="no_of_sheets"', false)
         ->assertSee('name="no_of_sheets_with_wastage"', false)
@@ -165,6 +185,81 @@ test('estimate sandbox form sections render in calculation order', function () {
         ->and($requiredPieceCostsPosition)->toBeLessThan($formActionsPosition);
 });
 
+test('estimate sandbox preserves selected measurement unit after validation failure', function () {
+    seedSandboxPricingItems();
+
+    $response = $this->from('/estimate-sandbox')->post('/estimate-sandbox', [
+        'measurement_unit' => 'cm',
+    ]);
+
+    $response->assertRedirect('/estimate-sandbox')
+        ->assertSessionHasErrors(['length']);
+
+    $this->get('/estimate-sandbox')
+        ->assertOk()
+        ->assertSee('name="measurement_unit" value="cm" data-measurement-unit checked', false)
+        ->assertSee('>cm</span>', false);
+});
+
+test('estimate sandbox rejects invalid measurement unit', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'measurement_unit' => 'mm',
+    ]))->assertInvalid('measurement_unit');
+});
+
+test('centimeter dimensions are normalized before dimension based calculations', function () {
+    [$paperItem, $interestItem, , , $bopp] = seedSandboxPricingItems();
+
+    $basePayload = [
+        'needs_lamination' => 1,
+        'lamination_mode' => 'front_only',
+        'lamination_front_pricing_item_id' => $bopp->id,
+        'needs_drip_off' => 1,
+    ];
+
+    $inchResponse = $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, array_merge($basePayload, [
+        'length' => 15,
+        'width' => 25,
+        'measurement_unit' => 'in',
+    ])))->assertOk();
+
+    $centimeterResponse = $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, array_merge($basePayload, [
+        'length' => 38.1,
+        'width' => 63.5,
+        'measurement_unit' => 'cm',
+    ])))->assertOk();
+
+    foreach ([
+        '24.19',
+        '26.61',
+        '29.03',
+        'BOPP Lamination',
+        '1.39',
+        '3.89',
+        '3,507.15',
+    ] as $expectedValue) {
+        $inchResponse->assertSee($expectedValue);
+        $centimeterResponse->assertSee($expectedValue);
+    }
+
+    $centimeterResponse
+        ->assertSee('Entered Size')
+        ->assertSee('38.10 &times; 63.50 cm', false)
+        ->assertSee('Calculation Size')
+        ->assertSee('15.00 &times; 25.00 in', false)
+        ->assertSee('class="result-value result-value--dimension"', false)
+        ->assertDontSee('dimension-result-block', false)
+        ->assertDontSee('Ã—')
+        ->assertDontSee('Ãƒâ€”');
+    $inchResponse
+        ->assertSee('Entered Size')
+        ->assertSee('15.00 &times; 25.00 in', false)
+        ->assertDontSee('Calculation Size')
+        ->assertDontSee('dimension-result-block', false);
+});
+
 test('pricing item seeder sets designing cost rate', function () {
     $this->seed(PricingCategorySeeder::class);
     $this->seed(PricingItemSeeder::class);
@@ -243,6 +338,7 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
     $this->post('/estimate-sandbox', [
         'length' => 20,
         'width' => 30,
+        'measurement_unit' => 'in',
         'gsm' => 100,
         'no_of_sheets' => 1000,
         'ups' => 4,
@@ -1402,6 +1498,7 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
     return array_merge([
         'length' => 20,
         'width' => 30,
+        'measurement_unit' => 'in',
         'gsm' => 100,
         'no_of_sheets' => 1000,
         'ups' => 4,

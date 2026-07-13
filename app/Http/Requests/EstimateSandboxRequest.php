@@ -19,6 +19,7 @@ class EstimateSandboxRequest extends FormRequest
         return [
             'length' => ['required', 'numeric', 'gt:0'],
             'width' => ['required', 'numeric', 'gt:0'],
+            'measurement_unit' => ['required', Rule::in(['in', 'cm'])],
             'gsm' => ['required', 'numeric', 'gt:0'],
             'no_of_sheets' => ['required', 'numeric', 'integer', 'min:1'],
             'ups' => ['required', 'integer', 'min:1'],
@@ -90,6 +91,7 @@ class EstimateSandboxRequest extends FormRequest
         return [
             'length' => 'length',
             'width' => 'width',
+            'measurement_unit' => 'measurement unit',
             'gsm' => 'GSM',
             'no_of_sheets' => 'no. of sheets',
             'ups' => 'ups',

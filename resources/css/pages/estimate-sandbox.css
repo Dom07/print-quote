@@ -12,6 +12,10 @@
     grid-column: 1 / -1;
 }
 
+.estimate-sandbox-form .form-group--full {
+    grid-column: 1 / -1;
+}
+
 .form-section {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
@@ -40,6 +44,96 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
+}
+
+.measurement-unit-toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0;
+    width: auto;
+    margin: 0;
+    border: 0;
+    padding: 0;
+}
+
+.measurement-unit-toggle .form-label {
+    width: 100%;
+}
+
+.measurement-unit-toggle .segmented-control__option {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.measurement-unit-toggle .segmented-control__option input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.measurement-unit-toggle .segmented-control__option span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 88px;
+    min-height: 32px;
+    border: 1px solid var(--color-border-strong);
+    padding: 6px 12px;
+    background: #ffffff;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.measurement-unit-toggle .segmented-control__option:first-of-type span {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.measurement-unit-toggle .segmented-control__option:last-of-type span {
+    margin-left: -1px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.measurement-unit-toggle .segmented-control__option input:checked + span {
+    position: relative;
+    z-index: 1;
+    border-color: var(--color-primary);
+    background: rgba(17, 97, 73, 0.08);
+    color: var(--color-primary);
+}
+
+.measurement-unit-toggle .segmented-control__option input:focus-visible + span {
+    position: relative;
+    z-index: 2;
+    outline: 3px solid rgba(17, 97, 73, 0.14);
+    outline-offset: 2px;
+}
+
+.input-with-suffix {
+    position: relative;
+}
+
+.input-with-suffix .form-input {
+    padding-right: 48px;
+}
+
+.input-with-suffix__unit {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    pointer-events: none;
+    transform: translateY(-50%);
+}
+
+.result-value--dimension {
+    max-width: 100%;
+    white-space: normal;
 }
 
 .addon-panel-stack {
@@ -130,6 +224,10 @@
 
     .form-section__fields {
         grid-template-columns: 1fr;
+    }
+
+    .measurement-unit-toggle {
+        width: 100%;
     }
 
     .addon-card__nested-grid {

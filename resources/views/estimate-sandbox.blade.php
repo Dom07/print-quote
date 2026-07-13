@@ -35,6 +35,9 @@
         $formatMoney = fn (?float $value) => $value === null ? '-' : '₹'.number_format($value, 2);
         $formatPercent = fn (?float $value) => $value === null ? '-' : number_format($value, 4).'%';
         $formatDecimal = fn (?float $value) => $value === null ? '-' : number_format($value, 4);
+        $formatDimension = fn (?float $length, ?float $width, string $unit) => $length === null || $width === null
+            ? 'Not calculated'
+            : number_format($length, 2).' &times; '.number_format($width, 2).' '.$unit;
         $formatDropdownPercent = fn (float $value) => rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.').'%';
         $laminationMode = fn (?string $mode) => match ($mode) {
             'front_only' => 'Front Only',
@@ -64,6 +67,8 @@
         $showNewJobPunchCost = $punchCostJobType === 'new_job';
         $showLaminationBackSide = $needsLamination && $fieldValue('lamination_mode') === 'both_sides';
         $spotUvCalculationType = fn (?string $type) => $type === 'minimum_divided_by_quantity' ? 'Minimum / Quantity' : 'Per Sheet';
+        $measurementUnit = old('measurement_unit', $input['measurement_unit'] ?? 'in');
+        $measurementUnitLabel = fn (?string $unit) => $unit === 'cm' ? 'cm' : 'in';
     @endphp
 
     <main class="app-page estimate-sandbox-page">
@@ -87,17 +92,40 @@
                                 </div>
 
                                 <div class="form-section__fields">
+                            <div class="form-group form-group--full">
+                                <fieldset class="segmented-control measurement-unit-toggle" aria-label="Measurement Unit">
+                                    <legend class="form-label">Measurement Unit</legend>
+                                    <label class="segmented-control__option">
+                                        <input type="radio" name="measurement_unit" value="in" data-measurement-unit @checked($measurementUnit === 'in')>
+                                        <span>Inches</span>
+                                    </label>
+                                    <label class="segmented-control__option">
+                                        <input type="radio" name="measurement_unit" value="cm" data-measurement-unit @checked($measurementUnit === 'cm')>
+                                        <span>Centimeters</span>
+                                    </label>
+                                </fieldset>
+                                @error('measurement_unit')
+                                    <p class="form-error">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             <div class="form-group">
-                                <label class="form-label" for="length">Length (inches)</label>
-                                <input class="form-input" id="length" name="length" type="number" step="any" min="0" value="{{ $fieldValue('length') }}">
+                                <label class="form-label" for="length">Length</label>
+                                <div class="input-with-suffix">
+                                    <input class="form-input" id="length" name="length" type="number" step="any" min="0" value="{{ $fieldValue('length') }}">
+                                    <span class="input-with-suffix__unit" data-measurement-unit-suffix>{{ $measurementUnitLabel($measurementUnit) }}</span>
+                                </div>
                                 @error('length')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label" for="width">Width (inches)</label>
-                                <input class="form-input" id="width" name="width" type="number" step="any" min="0" value="{{ $fieldValue('width') }}">
+                                <label class="form-label" for="width">Width</label>
+                                <div class="input-with-suffix">
+                                    <input class="form-input" id="width" name="width" type="number" step="any" min="0" value="{{ $fieldValue('width') }}">
+                                    <span class="input-with-suffix__unit" data-measurement-unit-suffix>{{ $measurementUnitLabel($measurementUnit) }}</span>
+                                </div>
                                 @error('width')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
@@ -549,6 +577,18 @@
 
                     <div class="ui-card__body">
                         <div class="result-stack">
+                            <div class="result-item">
+                                <span class="result-label">Entered Size</span>
+                                <span class="result-value result-value--dimension">{!! $formatDimension($result['entered_length'] ?? null, $result['entered_width'] ?? null, $measurementUnitLabel($result['measurement_unit'] ?? null)) !!}</span>
+                            </div>
+
+                            @if (($result['measurement_unit'] ?? null) === 'cm' && ($result['length_in_inches'] ?? null) !== null && ($result['width_in_inches'] ?? null) !== null)
+                                <div class="result-item">
+                                    <span class="result-label">Calculation Size</span>
+                                    <span class="result-value result-value--dimension">{!! $formatDimension($result['length_in_inches'] ?? null, $result['width_in_inches'] ?? null, 'in') !!}</span>
+                                </div>
+                            @endif
+
                             <div class="result-item">
                                 <span class="result-label">KG for No. of Sheets</span>
                                 <span class="result-value">{{ $formatKg($result['no_of_sheets'] ?? null) }}</span>
@@ -1035,6 +1075,8 @@
         const pastingDetails = document.querySelectorAll('[data-pasting-details]');
         const punchCostJobType = document.querySelector('[data-punch-cost-job-type]');
         const newJobPunchCost = document.querySelectorAll('[data-new-job-punch-cost]');
+        const measurementUnits = document.querySelectorAll('[data-measurement-unit]');
+        const measurementUnitSuffixes = document.querySelectorAll('[data-measurement-unit-suffix]');
 
         const syncFoiling = () => {
             toggle(foilingDetails, needsFoiling?.checked === true);
@@ -1066,6 +1108,14 @@
             toggle(newJobPunchCost, punchCostJobType?.value === 'new_job');
         };
 
+        const syncMeasurementUnit = () => {
+            const selectedUnit = document.querySelector('[data-measurement-unit]:checked');
+            const unit = selectedUnit?.value === 'cm' ? 'cm' : 'in';
+            measurementUnitSuffixes.forEach((suffix) => {
+                suffix.textContent = unit;
+            });
+        };
+
         needsFoiling?.addEventListener('change', syncFoiling);
         overridePaperRate?.addEventListener('change', syncPaperRateOverride);
         needsPunching?.addEventListener('change', syncPunching);
@@ -1074,6 +1124,9 @@
         needsSpotUv?.addEventListener('change', syncSpotUv);
         needsPasting?.addEventListener('change', syncPasting);
         punchCostJobType?.addEventListener('change', syncNewJobPunchCost);
+        measurementUnits.forEach((unit) => {
+            unit.addEventListener('change', syncMeasurementUnit);
+        });
 
         syncFoiling();
         syncPaperRateOverride();
@@ -1082,6 +1135,7 @@
         syncSpotUv();
         syncPasting();
         syncNewJobPunchCost();
+        syncMeasurementUnit();
     })();
 </script>
 </body>

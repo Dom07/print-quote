@@ -7,6 +7,7 @@ use App\Models\PricingItem;
 use App\Services\Estimates\DripOffCalculator;
 use App\Services\Estimates\LaminationCalculator;
 use App\Services\Estimates\MarginCalculator;
+use App\Services\Estimates\MeasurementConverter;
 use App\Services\Estimates\PaperPricingCalculator;
 use App\Services\Estimates\PaperWeightCalculator;
 use App\Services\Estimates\PastingRateResolver;
@@ -34,6 +35,7 @@ class EstimateSandboxController extends Controller
 
     public function store(
         EstimateSandboxRequest $request,
+        MeasurementConverter $measurementConverter,
         PaperWeightCalculator $weightCalculator,
         PaperPricingCalculator $pricingCalculator,
         PunchingRateResolver $punchingRateResolver,
@@ -48,11 +50,27 @@ class EstimateSandboxController extends Controller
         MarginCalculator $marginCalculator,
     ): View {
         $validated = $request->validated();
+        $dimensions = $measurementConverter->dimensionsToInches(
+            length: (float) $validated['length'],
+            width: (float) $validated['width'],
+            unit: $validated['measurement_unit'],
+        );
+        $lengthInInches = $dimensions['length'];
+        $widthInInches = $dimensions['width'];
+        $calculationInput = array_merge($validated, [
+            'length' => $lengthInInches,
+            'width' => $widthInInches,
+        ]);
 
         $kgResult = [
-            'no_of_sheets' => $weightCalculator->forNoOfSheets($validated),
-            'no_of_sheets_with_wastage' => $weightCalculator->forNoOfSheetsWithWastage($validated),
-            'no_of_sheets_to_process' => $weightCalculator->forNoOfSheetsToProcess($validated),
+            'measurement_unit' => $validated['measurement_unit'],
+            'entered_length' => (float) $validated['length'],
+            'entered_width' => (float) $validated['width'],
+            'length_in_inches' => $lengthInInches,
+            'width_in_inches' => $widthInInches,
+            'no_of_sheets' => $weightCalculator->forNoOfSheets($calculationInput),
+            'no_of_sheets_with_wastage' => $weightCalculator->forNoOfSheetsWithWastage($calculationInput),
+            'no_of_sheets_to_process' => $weightCalculator->forNoOfSheetsToProcess($calculationInput),
         ];
 
         $selectedPaperItem = PricingItem::findOrFail($validated['paper_pricing_item_id']);
@@ -104,8 +122,8 @@ class EstimateSandboxController extends Controller
                 frontPricingItem: $selectedFrontLaminationItem,
                 backPricingItem: $selectedBackLaminationItem,
                 quantity: (int) $validated['no_of_sheets_to_process'],
-                length: (float) $validated['length'],
-                width: (float) $validated['width'],
+                length: $lengthInInches,
+                width: $widthInInches,
             )
             : null;
         $spotUvResult = $needsSpotUv
@@ -116,8 +134,8 @@ class EstimateSandboxController extends Controller
             : null;
         $dripOffResult = $needsDripOff
             ? $dripOffCalculator->calculate(
-                length: (float) $validated['length'],
-                width: (float) $validated['width'],
+                length: $lengthInInches,
+                width: $widthInInches,
                 quantity: (int) $validated['no_of_sheets_to_process'],
             )
             : null;
