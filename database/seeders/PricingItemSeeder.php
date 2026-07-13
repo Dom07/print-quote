@@ -38,7 +38,7 @@ class PricingItemSeeder extends Seeder
             ['spot-uv', 'Raised UV', 'raised-uv', null, 'sheet', RateType::PerSheet, true],
             ['drip-off', 'Drip Off Coefficient', 'drip-off-coefficient', '0.7500', 'coefficient', RateType::FormulaCoefficient, false],
             ['drip-off', 'Drip Off Minimum Charge', 'drip-off-minimum-charge', '2500.0000', 'job', RateType::MinimumFlat, false],
-            ['drip-off', 'Drip Off Setup Charge', 'drip-off-setup-charge', '1300.0000', 'job', RateType::Flat, false],
+            ['drip-off', 'Drip Off Setup Charge', 'drip-off-setup-charge', '300.0000', 'job', RateType::Flat, false],
             ['foiling', 'Foiling Cost', 'foiling-cost', null, 'sheet', RateType::PerSheet, true],
             ['pasting', '4 Sides Pasting', 'four-sides-pasting', '0.4000', 'piece', RateType::PerPiece, false],
             ['pasting', '4 Sides Pasting With Checking', 'four-sides-pasting-with-checking', '0.4500', 'piece', RateType::PerPiece, false],
