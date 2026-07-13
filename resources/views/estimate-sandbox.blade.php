@@ -46,6 +46,11 @@
             'new_job' => 'New Job',
             default => '-',
         };
+        $pricingModeLabel = fn (?string $type) => match ($type) {
+            'minimum_flat' => 'Minimum Flat',
+            'per_sheet' => 'Per Sheet',
+            default => '-',
+        };
         $needsFoiling = (string) $fieldValue('needs_foiling') === '1';
         $isPaperRateOverridden = (string) $fieldValue('override_paper_rate') === '1';
         $needsPunching = (string) $fieldValue('needs_punching') === '1';
@@ -642,8 +647,23 @@
                                 </div>
 
                                 <div class="result-item">
-                                    <span class="result-label">Punching Rate</span>
+                                    <span class="result-label">Pricing Type</span>
+                                    <span class="result-value">{{ $pricingModeLabel($punchingRateResult['pricing_mode'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Configured Rate</span>
+                                    <span class="result-value">{{ $formatMoney($punchingRateResult['configured_rate'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Effective Rate Per Sheet</span>
                                     <span class="result-value">{{ $formatMoney($punchingRateResult['rate'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
+                                    <span class="result-label">Total Punching Charge</span>
+                                    <span class="result-value">{{ $formatMoney($punchingRateResult['total_charge'] ?? null) }}</span>
                                 </div>
                             @endif
                         </div>

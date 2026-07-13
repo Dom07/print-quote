@@ -9,6 +9,55 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
+test('standard punching resolves to minimum flat at one sheet', function () {
+    [$standardPunching] = seedPunchingResolverItems();
+
+    $result = (new PunchingRateResolver)->resolve($standardPunching, 1);
+
+    expect($result['name'])->toBe('Standard Punching')
+        ->and($result['source'])->toBe('rule')
+        ->and($result['rate_type'])->toBe('minimum_flat')
+        ->and($result['pricing_mode'])->toBe('minimum_flat')
+        ->and($result['configured_rate'])->toBe(1000.0)
+        ->and($result['rate'])->toBe(1000.0)
+        ->and($result['total_charge'])->toBe(1000.0)
+        ->and($result['matched_rule_name'])->toBe('Below 1000 Sheets');
+});
+
+test('standard punching resolves to minimum flat at five hundred sheets', function () {
+    [$standardPunching] = seedPunchingResolverItems();
+
+    $result = (new PunchingRateResolver)->resolve($standardPunching, 500);
+
+    expect($result['rate_type'])->toBe('minimum_flat')
+        ->and($result['configured_rate'])->toBe(1000.0)
+        ->and($result['rate'])->toBe(2.0)
+        ->and($result['total_charge'])->toBe(1000.0);
+});
+
+test('standard punching minimum flat effective rate is not rounded prematurely', function () {
+    [$standardPunching] = seedPunchingResolverItems();
+
+    $result = (new PunchingRateResolver)->resolve($standardPunching, 999);
+
+    expect($result['rate_type'])->toBe('minimum_flat')
+        ->and($result['total_charge'])->toBe(1000.0)
+        ->and(round($result['rate'] * 999, 2, PHP_ROUND_HALF_UP))->toBe(1000.0)
+        ->and($result['rate'])->toBeGreaterThan(1.0);
+});
+
+test('standard punching resolves to one rupee at exactly one thousand sheets', function () {
+    [$standardPunching] = seedPunchingResolverItems();
+
+    $result = (new PunchingRateResolver)->resolve($standardPunching, 1000);
+
+    expect($result['rate_type'])->toBe('per_sheet')
+        ->and($result['pricing_mode'])->toBe('per_sheet')
+        ->and($result['rate'])->toBe(1.0)
+        ->and($result['total_charge'])->toBe(1000.0)
+        ->and($result['matched_rule_name'])->toBe('1000 to 2000 Sheets');
+});
+
 test('standard punching resolves to one rupee below two thousand sheets', function () {
     [$standardPunching] = seedPunchingResolverItems();
 
@@ -16,7 +65,8 @@ test('standard punching resolves to one rupee below two thousand sheets', functi
 
     expect($result['name'])->toBe('Standard Punching')
         ->and($result['source'])->toBe('rule')
-        ->and($result['rate'])->toBe(1.0);
+        ->and($result['rate'])->toBe(1.0)
+        ->and($result['total_charge'])->toBe(1999.0);
 });
 
 test('standard punching resolves to one rupee at exactly two thousand sheets', function () {
@@ -24,7 +74,8 @@ test('standard punching resolves to one rupee at exactly two thousand sheets', f
 
     $result = (new PunchingRateResolver)->resolve($standardPunching, 2000);
 
-    expect($result['rate'])->toBe(1.0);
+    expect($result['rate'])->toBe(1.0)
+        ->and($result['total_charge'])->toBe(2000.0);
 });
 
 test('standard punching resolves to sixty paise above two thousand sheets', function () {
@@ -32,7 +83,17 @@ test('standard punching resolves to sixty paise above two thousand sheets', func
 
     $result = (new PunchingRateResolver)->resolve($standardPunching, 2001);
 
-    expect($result['rate'])->toBe(0.6);
+    expect($result['rate'])->toBe(0.6)
+        ->and($result['total_charge'])->toBe(1200.6);
+});
+
+test('standard punching resolves to sixty paise at three thousand sheets', function () {
+    [$standardPunching] = seedPunchingResolverItems();
+
+    $result = (new PunchingRateResolver)->resolve($standardPunching, 3000);
+
+    expect($result['rate'])->toBe(0.6)
+        ->and($result['total_charge'])->toBe(1800.0);
 });
 
 test('complicated punching resolves to item rate', function () {
@@ -42,14 +103,29 @@ test('complicated punching resolves to item rate', function () {
 
     expect($result['name'])->toBe('Complicated Punching')
         ->and($result['source'])->toBe('item')
-        ->and($result['rate'])->toBe(0.7);
+        ->and($result['rate'])->toBe(0.7)
+        ->and($result['configured_rate'])->toBe(0.7)
+        ->and($result['rate_type'])->toBe('per_sheet')
+        ->and($result['total_charge'])->toBe(1400.7);
 });
 
 test('null punching item resolves to null', function () {
-    $result = (new PunchingRateResolver)->resolve(null, 2001);
+    $result = (new PunchingRateResolver)->resolve(null, 0);
 
     expect($result)->toBeNull();
 });
+
+test('zero quantity throws when punching item is provided', function () {
+    [$standardPunching] = seedPunchingResolverItems();
+
+    (new PunchingRateResolver)->resolve($standardPunching, 0);
+})->throws(InvalidArgumentException::class, 'Punching quantity must be at least 1.');
+
+test('negative quantity throws when punching item is provided', function () {
+    [$standardPunching] = seedPunchingResolverItems();
+
+    (new PunchingRateResolver)->resolve($standardPunching, -1);
+})->throws(InvalidArgumentException::class, 'Punching quantity must be at least 1.');
 
 test('inactive rules are ignored', function () {
     [$standardPunching] = seedPunchingResolverItems();
@@ -65,7 +141,7 @@ test('inactive rules are ignored', function () {
         'is_active' => false,
     ]);
 
-    $result = (new PunchingRateResolver)->resolve($standardPunching, 1999);
+    $result = (new PunchingRateResolver)->resolve($standardPunching, 1000);
 
     expect($result['rate'])->toBe(1.0);
 });
@@ -100,7 +176,8 @@ test('fallback rule resolves when present', function () {
     $result = (new PunchingRateResolver)->resolve($fallbackPunching, 5000);
 
     expect($result['source'])->toBe('rule')
-        ->and($result['rate'])->toBe(2.5);
+        ->and($result['rate'])->toBe(2.5)
+        ->and($result['total_charge'])->toBe(12500.0);
 });
 
 function seedPunchingResolverItems(): array
@@ -123,12 +200,23 @@ function seedPunchingResolverItems(): array
 
     PricingRule::create([
         'pricing_item_id' => $standardPunching->id,
-        'name' => 'Up to 2000 Sheets',
+        'name' => 'Below 1000 Sheets',
         'min_value' => null,
+        'max_value' => '999.0000',
+        'rate' => '1000.0000',
+        'rate_type' => 'minimum_flat',
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+
+    PricingRule::create([
+        'pricing_item_id' => $standardPunching->id,
+        'name' => '1000 to 2000 Sheets',
+        'min_value' => '999.0000',
         'max_value' => '2000.0000',
         'rate' => '1.0000',
         'rate_type' => 'per_sheet',
-        'sort_order' => 1,
+        'sort_order' => 2,
         'is_active' => true,
     ]);
 
@@ -139,7 +227,7 @@ function seedPunchingResolverItems(): array
         'max_value' => null,
         'rate' => '0.6000',
         'rate_type' => 'per_sheet',
-        'sort_order' => 2,
+        'sort_order' => 3,
         'is_active' => true,
     ]);
 

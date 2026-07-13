@@ -2,8 +2,10 @@
 
 namespace App\Services\Estimates;
 
+use App\Enums\RateType;
 use App\Models\PricingItem;
 use App\Models\PricingRule;
+use InvalidArgumentException;
 
 class PunchingRateResolver
 {
@@ -18,6 +20,10 @@ class PunchingRateResolver
             return null;
         }
 
+        if ($quantity < 1) {
+            throw new InvalidArgumentException('Punching quantity must be at least 1.');
+        }
+
         $rule = $pricingItem->pricingRules()
             ->where('is_active', true)
             ->orderBy('sort_order')
@@ -26,21 +32,49 @@ class PunchingRateResolver
             ->first(fn (PricingRule $rule) => $this->ruleMatches($rule, $quantity));
 
         if ($rule !== null) {
-            return [
-                'name' => $pricingItem->name,
-                'rate' => $this->rounder->money((float) $rule->rate),
-                'source' => 'rule',
-            ];
+            return $this->resultFromRule($pricingItem, $rule, $quantity);
         }
 
         if ($pricingItem->rate === null) {
             return null;
         }
 
+        $rate = $this->rounder->money((float) $pricingItem->rate);
+
         return [
             'name' => $pricingItem->name,
-            'rate' => $this->rounder->money((float) $pricingItem->rate),
+            'rate' => $rate,
+            'configured_rate' => $rate,
+            'rate_type' => $pricingItem->rate_type?->value,
+            'pricing_mode' => $pricingItem->rate_type?->value,
+            'total_charge' => $this->rounder->money($rate * $quantity),
+            'matched_rule_name' => null,
             'source' => 'item',
+        ];
+    }
+
+    private function resultFromRule(PricingItem $pricingItem, PricingRule $rule, int $quantity): array
+    {
+        $configuredRate = (float) $rule->rate;
+        $rateType = $rule->rate_type;
+
+        if ($rateType === RateType::MinimumFlat) {
+            $totalCharge = $configuredRate;
+            $effectiveRate = $totalCharge / $quantity;
+        } else {
+            $effectiveRate = $configuredRate;
+            $totalCharge = $configuredRate * $quantity;
+        }
+
+        return [
+            'name' => $pricingItem->name,
+            'rate' => $effectiveRate,
+            'configured_rate' => $this->rounder->money($configuredRate),
+            'rate_type' => $rateType?->value,
+            'pricing_mode' => $rateType?->value,
+            'total_charge' => $this->rounder->money($totalCharge),
+            'matched_rule_name' => $rule->name,
+            'source' => 'rule',
         ];
     }
 

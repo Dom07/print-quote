@@ -311,7 +311,6 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('389,244.44')
         ->assertSee('3,892,444.44')
         ->assertSee('Paper Price Per Sheet')
-        ->assertSee('Punching Rate')
         ->assertSee('Lamination Value')
         ->assertSee('Drip Off Rate')
         ->assertSee('₹0.00')
@@ -767,9 +766,68 @@ test('estimate sandbox resolves standard punching rate at two thousand sheets', 
         ->assertOk()
         ->assertSee('Punching')
         ->assertSee('Standard Punching')
-        ->assertSee('₹1.00')
+        ->assertSee('Pricing Type')
+        ->assertSee('Per Sheet')
+        ->assertSee('Configured Rate')
+        ->assertSee('Effective Rate Per Sheet')
+        ->assertSee('1.00')
         ->assertSee('Punching Rate')
+        ->assertSee('Total Punching Charge')
+        ->assertSee('2,000.00')
         ->assertSee('₹3,502.64');
+});
+
+test('estimate sandbox resolves standard punching minimum flat at five hundred sheets', function () {
+    [$paperItem, $interestItem, $standardPunching] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'no_of_sheets' => 500,
+        'needs_punching' => 1,
+        'punching_pricing_item_id' => $standardPunching->id,
+    ]))
+        ->assertOk()
+        ->assertSee('Standard Punching')
+        ->assertSee('Pricing Type')
+        ->assertSee('Minimum Flat')
+        ->assertSee('Configured Rate')
+        ->assertSee('1,000.00')
+        ->assertSee('Effective Rate Per Sheet')
+        ->assertSee('2.00')
+        ->assertSee('Total Punching Charge');
+});
+
+test('estimate sandbox resolves standard punching minimum flat at nine hundred ninety nine sheets', function () {
+    [$paperItem, $interestItem, $standardPunching] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'no_of_sheets' => 999,
+        'needs_punching' => 1,
+        'punching_pricing_item_id' => $standardPunching->id,
+    ]))
+        ->assertOk()
+        ->assertSee('Standard Punching')
+        ->assertSee('Minimum Flat')
+        ->assertSee('Total Punching Charge')
+        ->assertSee('1,000.00');
+});
+
+test('estimate sandbox resolves standard punching rate at exactly one thousand sheets', function () {
+    [$paperItem, $interestItem, $standardPunching] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'no_of_sheets' => 1000,
+        'needs_punching' => 1,
+        'punching_pricing_item_id' => $standardPunching->id,
+    ]))
+        ->assertOk()
+        ->assertSee('Standard Punching')
+        ->assertSee('Pricing Type')
+        ->assertSee('Per Sheet')
+        ->assertSee('Configured Rate')
+        ->assertSee('Effective Rate Per Sheet')
+        ->assertSee('1.00')
+        ->assertSee('Total Punching Charge')
+        ->assertSee('1,000.00');
 });
 
 test('estimate sandbox resolves standard punching rate above two thousand sheets', function () {
@@ -782,7 +840,13 @@ test('estimate sandbox resolves standard punching rate above two thousand sheets
     ]))
         ->assertOk()
         ->assertSee('Standard Punching')
-        ->assertSee('₹0.60');
+        ->assertSee('Pricing Type')
+        ->assertSee('Per Sheet')
+        ->assertSee('Configured Rate')
+        ->assertSee('Effective Rate Per Sheet')
+        ->assertSee('0.60')
+        ->assertSee('Total Punching Charge')
+        ->assertSee('1,200.60');
 });
 
 test('estimate sandbox resolves complicated punching item rate', function () {
@@ -794,7 +858,12 @@ test('estimate sandbox resolves complicated punching item rate', function () {
     ]))
         ->assertOk()
         ->assertSee('Complicated Punching')
-        ->assertSee('₹0.70');
+        ->assertSee('Pricing Type')
+        ->assertSee('Per Sheet')
+        ->assertSee('Configured Rate')
+        ->assertSee('Effective Rate Per Sheet')
+        ->assertSee('0.70')
+        ->assertSee('Total Punching Charge');
 });
 
 test('estimate sandbox returns validation errors for invalid data', function () {
@@ -1401,12 +1470,23 @@ function seedSandboxPricingItems(): array
 
     PricingRule::create([
         'pricing_item_id' => $standardPunching->id,
-        'name' => 'Up to 2000 Sheets',
+        'name' => 'Below 1000 Sheets',
         'min_value' => null,
+        'max_value' => '999.0000',
+        'rate' => '1000.0000',
+        'rate_type' => 'minimum_flat',
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+
+    PricingRule::create([
+        'pricing_item_id' => $standardPunching->id,
+        'name' => '1000 to 2000 Sheets',
+        'min_value' => '999.0000',
         'max_value' => '2000.0000',
         'rate' => '1.0000',
         'rate_type' => 'per_sheet',
-        'sort_order' => 1,
+        'sort_order' => 2,
         'is_active' => true,
     ]);
 
@@ -1417,7 +1497,7 @@ function seedSandboxPricingItems(): array
         'max_value' => null,
         'rate' => '0.6000',
         'rate_type' => 'per_sheet',
-        'sort_order' => 2,
+        'sort_order' => 3,
         'is_active' => true,
     ]);
 
