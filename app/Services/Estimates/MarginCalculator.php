@@ -17,8 +17,19 @@ class MarginCalculator
         $totalCost = $this->rounder->money($totalCost);
         $slab = $this->resolveSlab($totalCost);
         $marginPercentage = (float) $slab->margin_percentage;
-        $marginAmount = $totalCost * ($marginPercentage / 100);
-        $totalCostWithMargin = $totalCost + $marginAmount;
+        $marginRate = $marginPercentage / 100;
+        $remainingRate = 1 - $marginRate;
+
+        if ($marginPercentage < 0) {
+            throw new RuntimeException("Margin percentage must be zero or greater; {$marginPercentage}% configured.");
+        }
+
+        if ($remainingRate <= 0) {
+            throw new RuntimeException("Margin percentage must be less than 100%; {$marginPercentage}% configured.");
+        }
+
+        $totalCostWithMargin = $totalCost / $remainingRate;
+        $marginAmount = $totalCostWithMargin - $totalCost;
 
         return [
             'selected_margin_slab_id' => $slab->id,

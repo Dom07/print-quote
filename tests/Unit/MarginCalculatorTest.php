@@ -48,22 +48,40 @@ test('it handles equality on the lower end side', function () {
     expect($result['selected_margin_slab_id'])->toBe($lowerSlab->id);
 });
 
-test('it calculates margin amount and total cost with margin', function () {
+test('it calculates gross margin amount and total cost with margin', function () {
     createMarginSlab('Below 20k', null, 20000, 17);
 
     $result = (new MarginCalculator)->calculate(10000);
 
-    expect($result['margin_amount'])->toBe(1700.0)
-        ->and($result['total_cost_with_margin'])->toBe(11700.0);
+    expect($result['margin_amount'])->toBe(2048.19)
+        ->and($result['total_cost_with_margin'])->toBe(12048.19);
+});
+
+test('it allows a zero margin percentage', function () {
+    createMarginSlab('Below 20k', null, 20000, 0);
+
+    $result = (new MarginCalculator)->calculate(10000);
+
+    expect($result['margin_amount'])->toBe(0.0)
+        ->and($result['total_cost_with_margin'])->toBe(10000.0);
+});
+
+test('it calculates gross margin using a decimal margin percentage', function () {
+    createMarginSlab('Below 20k', null, 20000, 12.5);
+
+    $result = (new MarginCalculator)->calculate(10000);
+
+    expect($result['margin_amount'])->toBe(1428.57)
+        ->and($result['total_cost_with_margin'])->toBe(11428.57);
 });
 
 test('it standard half-up rounds money outputs to two decimals', function () {
-    createMarginSlab('Below 20k', null, 20000, 12.5);
+    createMarginSlab('Below 20k', null, 20000, 20);
 
-    $result = (new MarginCalculator)->calculate(100.04);
+    $result = (new MarginCalculator)->calculate(100.06);
 
-    expect($result['margin_amount'])->toBe(12.51)
-        ->and($result['total_cost_with_margin'])->toBe(112.55);
+    expect($result['margin_amount'])->toBe(25.02)
+        ->and($result['total_cost_with_margin'])->toBe(125.08);
 });
 
 test('it throws when no slab matches', function () {
@@ -71,6 +89,24 @@ test('it throws when no slab matches', function () {
 
     (new MarginCalculator)->calculate(20000.01);
 })->throws(RuntimeException::class, 'No active margin slab matches total cost 20000.01.');
+
+test('it throws when margin percentage is 100 percent', function () {
+    createMarginSlab('Below 20k', null, 20000, 100);
+
+    (new MarginCalculator)->calculate(10000);
+})->throws(RuntimeException::class, 'Margin percentage must be less than 100%; 100% configured.');
+
+test('it throws when margin percentage is above 100 percent', function () {
+    createMarginSlab('Below 20k', null, 20000, 125);
+
+    (new MarginCalculator)->calculate(10000);
+})->throws(RuntimeException::class, 'Margin percentage must be less than 100%; 125% configured.');
+
+test('it throws when margin percentage is negative', function () {
+    createMarginSlab('Below 20k', null, 20000, -1);
+
+    (new MarginCalculator)->calculate(10000);
+})->throws(RuntimeException::class, 'Margin percentage must be zero or greater; -1% configured.');
 
 function createMarginSlab(string $name, ?float $minAmount, ?float $maxAmount, float $marginPercentage): MarginSlab
 {

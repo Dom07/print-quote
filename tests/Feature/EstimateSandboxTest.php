@@ -308,8 +308,8 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('3,503,200.00')
         ->assertSee('Above 3.5 Lac')
         ->assertSee('10.0000%')
-        ->assertSee('350,320.00')
-        ->assertSee('3,853,520.00')
+        ->assertSee('389,244.44')
+        ->assertSee('3,892,444.44')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Punching Rate')
         ->assertSee('Lamination Value')
@@ -338,7 +338,7 @@ test('sandbox margin changes based on calculated total cost', function () {
         ->assertSee('Total Cost With Margin');
 });
 
-test('sandbox total cost with margin is calculated from total cost plus margin amount', function () {
+test('sandbox total cost with margin is calculated using gross margin percentage', function () {
     [$paperItem, $interestItem] = seedSandboxPricingItems();
 
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem))
@@ -346,9 +346,9 @@ test('sandbox total cost with margin is calculated from total cost plus margin a
         ->assertSee('Total Cost')
         ->assertSee('3,503,200.00')
         ->assertSee('Margin Amount')
-        ->assertSee('350,320.00')
+        ->assertSee('389,244.44')
         ->assertSee('Total Cost With Margin')
-        ->assertSee('3,853,520.00');
+        ->assertSee('3,892,444.44');
 });
 
 test('checked apply lace uses the db pricing item rate in total piece cost', function () {
