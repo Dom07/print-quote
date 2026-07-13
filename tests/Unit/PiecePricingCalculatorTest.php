@@ -34,25 +34,44 @@ test('it treats nullable optional costs as zero', function () {
     );
 
     expect($result['window_labor_cost'])->toBe(0.0)
+        ->and($result['pasting_cost'])->toBe(0.0)
         ->and($result['lace_cost'])->toBe(0.0)
         ->and($result['designing_cost'])->toBe(0.0)
         ->and($result['optional_piece_costs_total'])->toBe(0.0);
 });
 
-test('it includes window labor and lace in optional piece costs total', function () {
+test('it includes window labor pasting and lace in optional piece costs total', function () {
     $result = (new PiecePricingCalculator)->calculate(
         noOfSheets: 1000,
         ups: 4,
         totalPricePerSheet: 3502.5392,
         windowLaborCost: 1.25,
+        pastingCost: 0.45,
         laceCost: 0.67,
         designingCostRate: 400,
     );
 
     expect($result['window_labor_cost'])->toBe(1.25)
+        ->and($result['pasting_cost'])->toBe(0.45)
         ->and($result['lace_cost'])->toBe(0.67)
         ->and($result['designing_cost'])->toBe(0.1)
-        ->and($result['optional_piece_costs_total'])->toBe(1.92);
+        ->and($result['optional_piece_costs_total'])->toBe(2.37);
+});
+
+test('it adds pasting directly as a per piece add on without dividing by ups', function () {
+    $result = (new PiecePricingCalculator)->calculate(
+        noOfSheets: 1000,
+        ups: 4,
+        totalPricePerSheet: 40,
+        pastingCost: 0.5,
+    );
+
+    expect($result['number_of_pieces'])->toBe(4000)
+        ->and($result['base_price_per_piece'])->toBe(10.0)
+        ->and($result['pasting_cost'])->toBe(0.5)
+        ->and($result['optional_piece_costs_total'])->toBe(0.5)
+        ->and($result['total_piece_cost'])->toBe(10.5)
+        ->and($result['total_cost'])->toBe(42000.0);
 });
 
 test('it divides designing cost rate by number of pieces', function () {
@@ -115,6 +134,7 @@ test('it calculates total piece cost', function () {
         ups: 4,
         totalPricePerSheet: 3502.5392,
         windowLaborCost: 1.25,
+        pastingCost: 0.45,
         laceCost: 0.67,
         designingCostRate: 400,
         punchCostJobType: 'new_job',
@@ -122,7 +142,7 @@ test('it calculates total piece cost', function () {
         expenses: 1.2,
     );
 
-    expect($result['total_piece_cost'])->toBe(881.85);
+    expect($result['total_piece_cost'])->toBe(882.3);
 });
 
 test('it calculates total cost', function () {
@@ -131,6 +151,7 @@ test('it calculates total cost', function () {
         ups: 4,
         totalPricePerSheet: 3502.5392,
         windowLaborCost: 1.25,
+        pastingCost: 0.45,
         laceCost: 0.67,
         designingCostRate: 400,
         punchCostJobType: 'new_job',
@@ -138,7 +159,7 @@ test('it calculates total cost', function () {
         expenses: 1.2,
     );
 
-    expect($result['total_cost'])->toBe(3527400.0);
+    expect($result['total_cost'])->toBe(3529200.0);
 });
 
 test('it does not return a separate raw total cost for margin', function () {
@@ -158,6 +179,7 @@ test('it standard half-up rounds money outputs to two decimals', function () {
         ups: 1,
         totalPricePerSheet: 10.005,
         windowLaborCost: 10.004,
+        pastingCost: 10.005,
         laceCost: 10.015,
         designingCostRate: 10.001,
         punchCostJobType: 'new_job',
@@ -167,6 +189,7 @@ test('it standard half-up rounds money outputs to two decimals', function () {
 
     expect($result['base_price_per_piece'])->toBe(10.01)
         ->and($result['window_labor_cost'])->toBe(10.0)
+        ->and($result['pasting_cost'])->toBe(10.01)
         ->and($result['lace_cost'])->toBe(10.02)
         ->and($result['designing_cost'])->toBe(0.01)
         ->and($result['punch_cost'])->toBe(10.01)

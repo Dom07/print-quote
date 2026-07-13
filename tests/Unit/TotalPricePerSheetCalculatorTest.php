@@ -17,11 +17,10 @@ test('it adds only required base components', function () {
         ->and($result['components']['lamination_value'])->toBe(0.0)
         ->and($result['components']['spot_uv_value'])->toBe(0.0)
         ->and($result['components']['drip_off_rate'])->toBe(0.0)
-        ->and($result['components']['pasting_rate'])->toBe(0.0)
         ->and($result['total_price_per_sheet'])->toBe(2877.29);
 });
 
-test('it adds all optional components', function () {
+test('it adds all optional sheet components without pasting', function () {
     $result = (new TotalPricePerSheetCalculator)->calculate(
         paperPricePerSheet: 1.7892,
         printingCost: 2500,
@@ -31,11 +30,21 @@ test('it adds all optional components', function () {
         laminationValue: 2.22,
         spotUvValue: 1.25,
         dripOffRate: 5.8,
-        pastingRate: 0.45,
     );
 
-    expect($result['components']['pasting_rate'])->toBe(0.45)
-        ->and($result['total_price_per_sheet'])->toBe(3513.26);
+    expect($result['components'])->not->toHaveKey('pasting_rate')
+        ->and($result['total_price_per_sheet'])->toBe(3512.81);
+});
+
+test('it does not include pasting in total price per sheet components', function () {
+    $result = (new TotalPricePerSheetCalculator)->calculate(
+        paperPricePerSheet: 40,
+        printingCost: 0,
+        inkCost: 0,
+    );
+
+    expect($result['components'])->not->toHaveKey('pasting_rate')
+        ->and($result['total_price_per_sheet'])->toBe(40.0);
 });
 
 test('it returns the expected component keys', function () {
@@ -54,6 +63,5 @@ test('it returns the expected component keys', function () {
         'lamination_value',
         'spot_uv_value',
         'drip_off_rate',
-        'pasting_rate',
     ]);
 });

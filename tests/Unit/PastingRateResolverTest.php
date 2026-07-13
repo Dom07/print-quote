@@ -16,6 +16,7 @@ test('it resolves every pasting combination', function (string $sides, bool $che
     expect($result['pasting_sides'])->toBe($sides)
         ->and($result['with_checking'])->toBe($checking)
         ->and($result['rate'])->toBe($rate)
+        ->and($result['rate_type'])->toBe('per_piece')
         ->and($result['pricing_item_name'])->toBe(PricingItem::where('slug', $slug)->value('name'));
 })->with([
     ['four_sides', false, 'four-sides-pasting', 0.4],
@@ -53,7 +54,7 @@ function seedPastingItems(): void
             'name' => $name,
             'slug' => $slug,
             'rate' => $rate,
-            'rate_type' => 'per_sheet',
+            'rate_type' => 'per_piece',
             'is_selectable' => false,
             'is_active' => true,
         ]);

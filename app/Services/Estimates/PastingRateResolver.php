@@ -44,6 +44,7 @@ class PastingRateResolver
             'pasting_sides_label' => $pastingSides === 'four_sides' ? '4 Sides' : '8 Sides',
             'with_checking' => $withChecking,
             'rate' => $this->rounder->money((float) $pricingItem->rate),
+            'rate_type' => 'per_piece',
         ];
     }
 }

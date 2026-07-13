@@ -87,10 +87,6 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('name="needs_spot_uv"', false)
         ->assertSee('name="spot_uv_pricing_item_id"', false)
         ->assertSee('name="needs_drip_off"', false)
-        ->assertSee('name="needs_pasting"', false)
-        ->assertSee('name="pasting_sides"', false)
-        ->assertSee('name="needs_pasting_checking"', false)
-        ->assertSee('Add a per-sheet pasting process.')
         ->assertSee('Apply spot UV or raised UV cost to processed sheets.')
         ->assertSee('Apply Spot UV')
         ->assertSee('type="hidden" name="needs_spot_uv" value="0"', false)
@@ -110,6 +106,11 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('Window &amp; Labor Cost', false)
         ->assertSee('Piece Add-ons')
         ->assertSee('Optional piece-level add-ons applied after base price per piece is calculated.')
+        ->assertSee('name="needs_pasting"', false)
+        ->assertSee('name="pasting_sides"', false)
+        ->assertSee('name="needs_pasting_checking"', false)
+        ->assertSee('Add a per-piece pasting cost.')
+        ->assertSee('Apply Pasting')
         ->assertSee('Lace')
         ->assertSee('Apply configured per-piece lace cost.')
         ->assertSee('Apply Lace')
@@ -211,6 +212,29 @@ test('required piece costs section appears after piece add-ons in the rendered h
         ->and($pieceAddOnsPosition)->toBeGreaterThan($pieceInputsPosition)
         ->and($requiredPieceCostsPosition)->toBeGreaterThan($pieceAddOnsPosition)
         ->and($requiredPieceCostsPosition)->toBeLessThan($formActionsPosition);
+});
+
+test('pasting controls render in piece add ons before lace', function () {
+    seedSandboxPricingItems();
+
+    $response = $this->get('/estimate-sandbox')->assertOk();
+    $html = $response->getContent();
+
+    $sheetAddOnsPosition = strpos($html, 'id="sheet-add-ons-title"');
+    $pieceAddOnsPosition = strpos($html, 'id="piece-add-ons-title"');
+    $windowLaborPosition = strpos($html, 'id="window_labor_cost"');
+    $pastingPosition = strpos($html, 'id="needs_pasting"');
+    $lacePosition = strpos($html, 'id="needs_lace_cost"');
+
+    expect($sheetAddOnsPosition)->not->toBeFalse()
+        ->and($pieceAddOnsPosition)->not->toBeFalse()
+        ->and($windowLaborPosition)->not->toBeFalse()
+        ->and($pastingPosition)->not->toBeFalse()
+        ->and($lacePosition)->not->toBeFalse()
+        ->and($pastingPosition)->toBeGreaterThan($pieceAddOnsPosition)
+        ->and($pastingPosition)->toBeGreaterThan($windowLaborPosition)
+        ->and($pastingPosition)->toBeLessThan($lacePosition)
+        ->and($pastingPosition)->toBeGreaterThan($sheetAddOnsPosition);
 });
 
 test('estimate sandbox calculates paper kilograms and paper pricing for valid data', function () {
@@ -1313,12 +1337,20 @@ test('disabled pasting ignores submitted selections', function () {
     ]))
         ->assertOk()
         ->assertDontSee('Selected Pasting Rate')
-        ->assertSee('Pasting Rate')
+        ->assertDontSee('Pasting Rate')
+        ->assertSee('Pasting Cost')
         ->assertSee('₹0.00');
 });
 
-test('pasting combinations use their configured per-sheet rates', function (string $sides, string $checking, string $label, string $formattedRate) {
+test('pasting combinations use their configured per-piece rates', function (string $sides, string $checking, string $label, string $formattedRate) {
     [$paperItem, $interestItem] = seedSandboxPricingItems();
+    $expectedTotals = [
+        'four_sides:0' => ['876.20', '3,504,800.00'],
+        'four_sides:1' => ['876.25', '3,505,000.00'],
+        'eight_sides:0' => ['876.70', '3,506,800.00'],
+        'eight_sides:1' => ['876.80', '3,507,200.00'],
+    ];
+    [$pieceCost, $totalCost] = $expectedTotals["{$sides}:{$checking}"];
 
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
         'needs_pasting' => '1',
@@ -1326,16 +1358,44 @@ test('pasting combinations use their configured per-sheet rates', function (stri
         'needs_pasting_checking' => $checking,
     ]))
         ->assertOk()
-        ->assertSee('Selected Pasting Rate')
+        ->assertSee('Pasting Cost')
         ->assertSee($label)
-        ->assertSee($checking === '1' ? 'Yes' : 'No')
-        ->assertSee($formattedRate);
+        ->assertSee($formattedRate)
+        ->assertSee('Optional Piece Costs Total')
+        ->assertSee('Total Piece Cost')
+        ->assertSee($pieceCost)
+        ->assertSee($totalCost);
 })->with([
     ['four_sides', '0', '4 Sides', '₹0.40'],
     ['four_sides', '1', '4 Sides', '₹0.45'],
     ['eight_sides', '0', '8 Sides', '₹0.90'],
     ['eight_sides', '1', '8 Sides', '₹1.00'],
 ]);
+
+test('pasting appears in piece add on results before lace and not sheet components', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $response = $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_pasting' => '1',
+        'pasting_sides' => 'four_sides',
+        'needs_pasting_checking' => '0',
+    ]))->assertOk();
+
+    $html = $response->getContent();
+    $piecePricingPosition = strpos($html, 'Piece Pricing');
+    $pastingCostPosition = strpos($html, 'Pasting Cost');
+    $laceCostPosition = strpos($html, 'Lace Cost');
+    $optionalTotalPosition = strpos($html, 'Optional Piece Costs Total');
+
+    expect($piecePricingPosition)->not->toBeFalse()
+        ->and($pastingCostPosition)->not->toBeFalse()
+        ->and($laceCostPosition)->not->toBeFalse()
+        ->and($optionalTotalPosition)->not->toBeFalse()
+        ->and($pastingCostPosition)->toBeGreaterThan($piecePricingPosition)
+        ->and($pastingCostPosition)->toBeLessThan($laceCostPosition)
+        ->and($laceCostPosition)->toBeLessThan($optionalTotalPosition)
+        ->and($html)->not->toContain('Pasting Rate');
+});
 
 function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, array $overrides = []): array
 {
@@ -1747,7 +1807,7 @@ function seedSandboxPricingItems(): array
             'name' => $name,
             'slug' => $slug,
             'rate' => $rate,
-            'rate_type' => 'per_sheet',
+            'rate_type' => 'per_piece',
             'is_selectable' => false,
             'is_active' => true,
         ]);

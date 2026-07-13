@@ -136,13 +136,13 @@ class EstimateSandboxController extends Controller
             laminationValue: $laminationResult['combined_value'] ?? null,
             spotUvValue: $spotUvResult['value'] ?? null,
             dripOffRate: $dripOffResult['final_rate_per_sheet'] ?? null,
-            pastingRate: $pastingResult['rate'] ?? null,
         );
         $piecePricingResult = $piecePricingCalculator->calculate(
             noOfSheets: (int) $validated['no_of_sheets'],
             ups: (int) $validated['ups'],
             totalPricePerSheet: $totalPricePerSheetResult['total_price_per_sheet'],
             windowLaborCost: isset($validated['window_labor_cost']) ? (float) $validated['window_labor_cost'] : null,
+            pastingCost: $pastingResult['rate'] ?? null,
             laceCost: $needsLaceCost ? $pieceLevelAddonResolver->laceCost() : null,
             designingCostRate: $pieceLevelAddonResolver->designingCost(),
             punchCostJobType: $punchCostJobType,
