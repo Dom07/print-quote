@@ -142,9 +142,12 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('name="window_labor_cost"', false)
         ->assertSee('name="needs_lace_cost"', false)
         ->assertDontSee('name="lace_cost"', false)
-        ->assertDontSee('name="designing_cost"', false)
         ->assertDontSee('name="needs_window_labor_cost"', false)
-        ->assertDontSee('name="needs_designing_cost"', false)
+        ->assertSee('Design Cost')
+        ->assertSee('Apply Design Cost')
+        ->assertSee('name="needs_designing_cost"', false)
+        ->assertDontSee('name="designing_pricing_item_id"', false)
+        ->assertDontSee('name="designing_cost"', false)
         ->assertSee('Required Piece Costs')
         ->assertSee('Job Type')
         ->assertSee('Repeat Job')
@@ -273,7 +276,8 @@ test('pricing item seeder sets designing cost rate', function () {
         ->whereHas('pricingCategory', fn ($query) => $query->where('slug', 'add-on-costs'))
         ->firstOrFail();
 
-    expect($item->rate)->toBe('400.0000');
+    expect($item->rate)->toBe('400.0000')
+        ->and($item->is_selectable)->toBeTrue();
 });
 
 test('piece inputs section appears after drip off in the rendered html', function () {
@@ -361,6 +365,7 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         'needs_pasting_checking' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
+        'needs_designing_cost' => 0,
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,
@@ -429,13 +434,13 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('4000')
         ->assertSee('875.64')
         ->assertSee('0.06')
-        ->assertSee('875.80')
-        ->assertSee('3,503,200.00')
+        ->assertSee('875.70')
+        ->assertSee('3,502,800.00')
         ->assertSee('Above 3.5 Lac')
         ->assertSee('10.0000%')
-        ->assertSee('389,244.44')
-        ->assertSee('3,892,444.44')
-        ->assertSee('₹973.11')
+        ->assertSee('389,200.00')
+        ->assertSee('3,892,000.00')
+        ->assertSee('₹973.00')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Lamination Value')
         ->assertSee('Drip Off Rate')
@@ -469,13 +474,13 @@ test('sandbox total cost with margin is calculated using gross margin percentage
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem))
         ->assertOk()
         ->assertSee('Total Cost')
-        ->assertSee('3,503,200.00')
+        ->assertSee('3,502,800.00')
         ->assertSee('Margin Amount')
-        ->assertSee('389,244.44')
+        ->assertSee('389,200.00')
         ->assertSee('Total Cost With Margin')
-        ->assertSee('3,892,444.44')
+        ->assertSee('3,892,000.00')
         ->assertSee('Selling Price')
-        ->assertSee('₹973.11');
+        ->assertSee('₹973.00');
 });
 
 test('checked apply lace uses the db pricing item rate in total piece cost', function () {
@@ -489,10 +494,10 @@ test('checked apply lace uses the db pricing item rate in total piece cost', fun
         ->assertSee('0.67')
         ->assertSee('Optional Piece Costs Total')
         ->assertSee('Designing Cost')
-        ->assertSee('0.10')
+        ->assertSee('0.00')
         ->assertSee('Total Piece Cost')
-        ->assertSee('876.47')
-        ->assertSee('3,505,880.00');
+        ->assertSee('876.37')
+        ->assertSee('3,505,480.00');
 });
 
 test('unchecked apply lace contributes zero to final price per piece', function () {
@@ -504,8 +509,38 @@ test('unchecked apply lace contributes zero to final price per piece', function 
         ->assertOk()
         ->assertSee('Lace Cost')
         ->assertSee('Total Piece Cost')
+        ->assertSee('875.70')
+        ->assertDontSee('875.80');
+});
+
+test('selected design cost uses the db pricing item rate in total piece cost', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_designing_cost' => 1,
+    ]))
+        ->assertOk()
+        ->assertSee('Designing Cost')
+        ->assertSee('0.10')
+        ->assertSee('Required Piece Costs Total')
+        ->assertSee('0.16')
+        ->assertSee('Total Piece Cost')
         ->assertSee('875.80')
-        ->assertDontSee('876.47');
+        ->assertSee('3,503,200.00');
+});
+
+test('unselected design cost contributes zero', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_designing_cost' => 0,
+    ]))
+        ->assertOk()
+        ->assertSee('Designing Cost')
+        ->assertSee('0.00')
+        ->assertSee('Total Piece Cost')
+        ->assertSee('875.70')
+        ->assertDontSee('875.80');
 });
 
 test('repeat job uses db repeat job punch cost divided by number of pieces', function () {
@@ -521,7 +556,7 @@ test('repeat job uses db repeat job punch cost divided by number of pieces', fun
         ->assertSee('Punch Cost')
         ->assertSee('0.06')
         ->assertSee('Designing Cost')
-        ->assertSee('0.10')
+        ->assertSee('0.00')
         ->assertSee('Required Piece Costs Total');
 });
 
@@ -536,7 +571,7 @@ test('new job uses manual new job punch cost', function () {
         ->assertSee('Punch Cost Job Type')
         ->assertSee('New Job')
         ->assertSee('3.25')
-        ->assertSee('878.99');
+        ->assertSee('878.89');
 });
 
 test('expenses are included in total piece cost', function () {
@@ -549,9 +584,9 @@ test('expenses are included in total piece cost', function () {
         ->assertSee('Expenses')
         ->assertSee('0.80')
         ->assertSee('Required Piece Costs Total')
-        ->assertSee('0.96')
+        ->assertSee('0.86')
         ->assertSee('Total Piece Cost')
-        ->assertSee('876.60');
+        ->assertSee('876.50');
 });
 
 test('estimate sandbox validates apply lace as boolean', function () {
@@ -1021,6 +1056,7 @@ test('estimate sandbox returns validation errors for invalid data', function () 
         'needs_lamination' => 'maybe',
         'window_labor_cost' => -1,
         'needs_lace_cost' => 'maybe',
+        'needs_designing_cost' => 'maybe',
         'punch_cost_job_type' => 'first_job',
         'new_job_punch_cost' => -1,
         'expenses' => -1,
@@ -1044,6 +1080,7 @@ test('estimate sandbox returns validation errors for invalid data', function () 
             'needs_lamination',
             'window_labor_cost',
             'needs_lace_cost',
+            'needs_designing_cost',
             'punch_cost_job_type',
             'new_job_punch_cost',
             'expenses',
@@ -1076,6 +1113,7 @@ test('estimate sandbox validates missing pricing selections', function () {
         'needs_drip_off' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
+        'needs_designing_cost' => 0,
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,
@@ -1107,6 +1145,7 @@ test('estimate sandbox validates missing manual costs', function () {
         'needs_drip_off' => 0,
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
+        'needs_designing_cost' => 0,
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,
@@ -1489,10 +1528,10 @@ test('disabled pasting ignores submitted selections', function () {
 test('pasting combinations use their configured per-piece rates', function (string $sides, string $checking, string $label, string $formattedRate) {
     [$paperItem, $interestItem] = seedSandboxPricingItems();
     $expectedTotals = [
-        'four_sides:0' => ['876.20', '3,504,800.00'],
-        'four_sides:1' => ['876.25', '3,505,000.00'],
-        'eight_sides:0' => ['876.70', '3,506,800.00'],
-        'eight_sides:1' => ['876.80', '3,507,200.00'],
+        'four_sides:0' => ['876.10', '3,504,400.00'],
+        'four_sides:1' => ['876.15', '3,504,600.00'],
+        'eight_sides:0' => ['876.60', '3,506,400.00'],
+        'eight_sides:1' => ['876.70', '3,506,800.00'],
     ];
     [$pieceCost, $totalCost] = $expectedTotals["{$sides}:{$checking}"];
 
@@ -1516,7 +1555,7 @@ test('pasting combinations use their configured per-piece rates', function (stri
     ['eight_sides', '1', '8 Sides', '₹1.00'],
 ]);
 
-test('pasting appears in piece add on results before lace and not sheet components', function () {
+test('piece add on results appear together before optional total and not sheet components', function () {
     [$paperItem, $interestItem] = seedSandboxPricingItems();
 
     $response = $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
@@ -1529,15 +1568,18 @@ test('pasting appears in piece add on results before lace and not sheet componen
     $piecePricingPosition = strpos($html, 'Piece Pricing');
     $pastingCostPosition = strpos($html, 'Pasting Cost');
     $laceCostPosition = strpos($html, 'Lace Cost');
+    $designingCostPosition = strpos($html, 'Designing Cost');
     $optionalTotalPosition = strpos($html, 'Optional Piece Costs Total');
 
     expect($piecePricingPosition)->not->toBeFalse()
         ->and($pastingCostPosition)->not->toBeFalse()
         ->and($laceCostPosition)->not->toBeFalse()
+        ->and($designingCostPosition)->not->toBeFalse()
         ->and($optionalTotalPosition)->not->toBeFalse()
         ->and($pastingCostPosition)->toBeGreaterThan($piecePricingPosition)
         ->and($pastingCostPosition)->toBeLessThan($laceCostPosition)
-        ->and($laceCostPosition)->toBeLessThan($optionalTotalPosition)
+        ->and($laceCostPosition)->toBeLessThan($designingCostPosition)
+        ->and($designingCostPosition)->toBeLessThan($optionalTotalPosition)
         ->and($html)->not->toContain('Pasting Rate');
 });
 
@@ -1566,6 +1608,7 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'needs_pasting_checking' => '0',
         'window_labor_cost' => '',
         'needs_lace_cost' => 0,
+        'needs_designing_cost' => 0,
         'punch_cost_job_type' => 'repeat_job',
         'new_job_punch_cost' => '',
         'expenses' => 0,

@@ -88,6 +88,7 @@ class EstimateSandboxController extends Controller
         $needsDripOff = (bool) $validated['needs_drip_off'];
         $needsPasting = (bool) $validated['needs_pasting'];
         $needsLaceCost = (bool) $validated['needs_lace_cost'];
+        $needsDesigningCost = (bool) $validated['needs_designing_cost'];
         $punchCostJobType = $validated['punch_cost_job_type'];
         $selectedPunchingItem = $needsPunching && isset($validated['punching_pricing_item_id'])
             ? PricingItem::findOrFail($validated['punching_pricing_item_id'])
@@ -168,7 +169,7 @@ class EstimateSandboxController extends Controller
             windowLaborCost: isset($validated['window_labor_cost']) ? (float) $validated['window_labor_cost'] : null,
             pastingCost: $pastingResult['rate'] ?? null,
             laceCost: $needsLaceCost ? $pieceLevelAddonResolver->laceCost() : null,
-            designingCostRate: $pieceLevelAddonResolver->designingCost(),
+            designingCostRate: $needsDesigningCost ? $pieceLevelAddonResolver->designingCost() : null,
             punchCostJobType: $punchCostJobType,
             repeatJobPunchCost: $punchCostJobType === 'repeat_job' ? $requiredPieceCostResolver->repeatJobPunchCost() : null,
             newJobPunchCost: isset($validated['new_job_punch_cost']) ? (float) $validated['new_job_punch_cost'] : null,

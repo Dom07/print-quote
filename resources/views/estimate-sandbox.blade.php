@@ -65,6 +65,7 @@
         $needsPasting = (string) $fieldValue('needs_pasting') === '1';
         $needsPastingChecking = (string) $fieldValue('needs_pasting_checking') === '1';
         $needsLaceCost = (string) $fieldValue('needs_lace_cost') === '1';
+        $needsDesigningCost = (string) $fieldValue('needs_designing_cost') === '1';
         $punchCostJobType = $fieldValue('punch_cost_job_type');
         $showNewJobPunchCost = $punchCostJobType === 'new_job';
         $showLaminationBackSide = $needsLamination && $fieldValue('lamination_mode') === 'both_sides';
@@ -539,6 +540,23 @@
                                                     <p class="form-error">{{ $message }}</p>
                                                 @enderror
                                             </section>
+
+                                            <section class="addon-card" aria-labelledby="designing-cost-addon-title">
+                                                <div class="addon-card__header">
+                                                    <div>
+                                                        <h3 class="addon-card__title" id="designing-cost-addon-title">Design Cost</h3>
+                                                        <p class="addon-card__description">Apply the configured design cost.</p>
+                                                    </div>
+                                                    <label class="addon-card__checkbox" for="needs_designing_cost">
+                                                        <input type="hidden" name="needs_designing_cost" value="0">
+                                                        <input class="form-check-input" id="needs_designing_cost" name="needs_designing_cost" type="checkbox" value="1" data-needs-designing-cost @checked($needsDesigningCost)>
+                                                        <span>Apply Design Cost</span>
+                                                    </label>
+                                                </div>
+                                                @error('needs_designing_cost')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </section>
                                         </div>
                                     </section>
 
@@ -995,6 +1013,11 @@
                                 </div>
 
                                 <div class="result-item">
+                                    <span class="result-label">Designing Cost</span>
+                                    <span class="result-value">{{ $formatMoney($piecePricingResult['designing_cost'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item">
                                     <span class="result-label">Optional Piece Costs Total</span>
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['optional_piece_costs_total'] ?? null) }}</span>
                                 </div>
@@ -1012,11 +1035,6 @@
                                 <div class="result-item">
                                     <span class="result-label">Punch Cost</span>
                                     <span class="result-value">{{ $formatMoney($piecePricingResult['punch_cost'] ?? null) }}</span>
-                                </div>
-
-                                <div class="result-item">
-                                    <span class="result-label">Designing Cost</span>
-                                    <span class="result-value">{{ $formatMoney($piecePricingResult['designing_cost'] ?? null) }}</span>
                                 </div>
 
                                 <div class="result-item">
