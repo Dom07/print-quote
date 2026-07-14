@@ -3,6 +3,7 @@
 namespace App\Services\Estimates;
 
 use App\Models\MarginSlab;
+use InvalidArgumentException;
 use RuntimeException;
 
 class MarginCalculator
@@ -12,8 +13,12 @@ class MarginCalculator
         $this->rounder ??= new EstimateRounder;
     }
 
-    public function calculate(float $totalCost): array
+    public function calculate(float $totalCost, int $numberOfPieces): array
     {
+        if ($numberOfPieces <= 0) {
+            throw new InvalidArgumentException('Number of pieces must be greater than zero.');
+        }
+
         $totalCost = $this->rounder->money($totalCost);
         $slab = $this->resolveSlab($totalCost);
         $marginPercentage = (float) $slab->margin_percentage;
@@ -30,6 +35,7 @@ class MarginCalculator
 
         $totalCostWithMargin = $totalCost / $remainingRate;
         $marginAmount = $totalCostWithMargin - $totalCost;
+        $sellingPrice = $totalCostWithMargin / $numberOfPieces;
 
         return [
             'selected_margin_slab_id' => $slab->id,
@@ -39,6 +45,7 @@ class MarginCalculator
             'margin_percentage' => $marginPercentage,
             'margin_amount' => $this->rounder->money($marginAmount),
             'total_cost_with_margin' => $this->rounder->money($totalCostWithMargin),
+            'selling_price' => $this->rounder->money($sellingPrice),
         ];
     }
 

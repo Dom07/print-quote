@@ -421,6 +421,7 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('Margin Percentage')
         ->assertSee('Margin Amount')
         ->assertSee('Total Cost With Margin')
+        ->assertSee('Selling Price')
         ->assertSee('4000')
         ->assertSee('875.64')
         ->assertSee('0.06')
@@ -430,6 +431,7 @@ test('estimate sandbox calculates paper kilograms and paper pricing for valid da
         ->assertSee('10.0000%')
         ->assertSee('389,244.44')
         ->assertSee('3,892,444.44')
+        ->assertSee('₹973.11')
         ->assertSee('Paper Price Per Sheet')
         ->assertSee('Lamination Value')
         ->assertSee('Drip Off Rate')
@@ -467,7 +469,9 @@ test('sandbox total cost with margin is calculated using gross margin percentage
         ->assertSee('Margin Amount')
         ->assertSee('389,244.44')
         ->assertSee('Total Cost With Margin')
-        ->assertSee('3,892,444.44');
+        ->assertSee('3,892,444.44')
+        ->assertSee('Selling Price')
+        ->assertSee('₹973.11');
 });
 
 test('checked apply lace uses the db pricing item rate in total piece cost', function () {

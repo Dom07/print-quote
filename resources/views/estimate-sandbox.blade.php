@@ -1040,9 +1040,14 @@
                                     <span class="result-value">{{ $formatMoney($marginResult['margin_amount'] ?? null) }}</span>
                                 </div>
 
-                                <div class="result-item result-item--total">
+                                <div class="result-item">
                                     <span class="result-label">Total Cost With Margin</span>
                                     <span class="result-value">{{ $formatMoney($marginResult['total_cost_with_margin'] ?? null) }}</span>
+                                </div>
+
+                                <div class="result-item result-item--total">
+                                    <span class="result-label">Selling Price</span>
+                                    <span class="result-value">{{ $formatMoney($marginResult['selling_price'] ?? null) }}</span>
                                 </div>
                             </div>
                         @endif
