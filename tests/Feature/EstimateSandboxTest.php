@@ -120,6 +120,9 @@ test('estimate sandbox page loads successfully', function () {
         ->assertSee('Apply Drip Off')
         ->assertSee('type="hidden" name="needs_drip_off" value="0"', false)
         ->assertSee('id="needs_drip_off" name="needs_drip_off" type="checkbox" value="1"', false)
+        ->assertSee('name="drip_off_setup_pricing_item_id"', false)
+        ->assertSee('New Job with Pasting')
+        ->assertSee('Repeat Job with Pasting')
         ->assertSee('Piece Inputs')
         ->assertSee('Inputs used to convert sheet pricing into piece pricing.')
         ->assertSee('Ups')
@@ -217,6 +220,7 @@ test('centimeter dimensions are normalized before dimension based calculations',
         'lamination_mode' => 'front_only',
         'lamination_front_pricing_item_id' => $bopp->id,
         'needs_drip_off' => 1,
+        'drip_off_setup_pricing_item_id' => PricingItem::where('slug', 'drip-off-repeat-job-with-pasting')->firstOrFail()->id,
     ];
 
     $inchResponse = $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, array_merge($basePayload, [
@@ -237,8 +241,8 @@ test('centimeter dimensions are normalized before dimension based calculations',
         '29.03',
         'BOPP Lamination',
         '1.39',
-        '3.89',
-        '3,507.15',
+        '3.06',
+        '3,506.32',
     ] as $expectedValue) {
         $inchResponse->assertSee($expectedValue);
         $centimeterResponse->assertSee($expectedValue);
@@ -712,47 +716,57 @@ test('estimate sandbox rejects negative expenses', function () {
 });
 
 test('estimate sandbox previews drip off when base cost exceeds minimum', function () {
-    [$paperItem, $interestItem] = seedSandboxPricingItems();
+    [$paperItem, $interestItem, , , , , , , $newJobWithPasting] = seedSandboxPricingItems();
 
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
         'length' => 20,
         'width' => 30,
         'no_of_sheets_to_process' => 1000,
         'needs_drip_off' => 1,
+        'drip_off_setup_pricing_item_id' => $newJobWithPasting->id,
     ]))
         ->assertOk()
+        ->assertSee('Setup Option')
+        ->assertSee('New Job with Pasting')
         ->assertSee('Coefficient')
         ->assertSee('0.7500')
         ->assertSee('Base Rate Per Sheet')
         ->assertSee('₹4.50')
         ->assertSee('Base Cost')
         ->assertSee('₹4,500.00')
+        ->assertSee('Flat Add-On Amount')
+        ->assertSee('₹1,600.00')
         ->assertSee('Flat Add-On Rate Per Sheet')
-        ->assertSee('₹1.30')
+        ->assertSee('₹1.60')
         ->assertSee('Final Drip Off Rate Per Sheet')
-        ->assertSee('₹5.80')
+        ->assertSee('₹6.10')
         ->assertSee('Drip Off Rate')
-        ->assertSee('₹3,508.34');
+        ->assertSee('₹3,508.64');
 });
 
-test('estimate sandbox previews drip off when minimum applies', function () {
-    [$paperItem, $interestItem] = seedSandboxPricingItems();
+test('estimate sandbox previews repeat job drip off when minimum applies', function () {
+    [$paperItem, $interestItem, , , , , , , , $repeatJobWithPasting] = seedSandboxPricingItems();
 
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
         'length' => 10,
         'width' => 10,
         'no_of_sheets_to_process' => 1000,
         'needs_drip_off' => 1,
+        'drip_off_setup_pricing_item_id' => $repeatJobWithPasting->id,
     ]))
         ->assertOk()
+        ->assertSee('Setup Option')
+        ->assertSee('Repeat Job with Pasting')
         ->assertSee('Minimum Adjusted Base Cost')
         ->assertSee('₹2,500.00')
         ->assertSee('Minimum Adjusted Base Rate Per Sheet')
         ->assertSee('₹2.50')
+        ->assertSee('Flat Add-On Amount')
+        ->assertSee('₹300.00')
         ->assertSee('Final Drip Off Rate Per Sheet')
-        ->assertSee('₹3.80')
+        ->assertSee('₹2.80')
         ->assertSee('Drip Off Rate')
-        ->assertSee('₹3,504.85');
+        ->assertSee('₹3,503.85');
 });
 
 test('estimate sandbox previews spot uv at exact threshold', function () {
@@ -1219,10 +1233,40 @@ test('estimate sandbox rejects zero sheets to process when drip off is selected'
     $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
         'no_of_sheets_to_process' => 0,
         'needs_drip_off' => 1,
+        'drip_off_setup_pricing_item_id' => PricingItem::where('slug', 'drip-off-new-job-with-pasting')->firstOrFail()->id,
     ]))
         ->assertSessionHasErrors([
             'no_of_sheets_to_process',
         ]);
+});
+
+test('estimate sandbox requires drip off setup option only when drip off is selected', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $payload = validSandboxPayload($paperItem, $interestItem, [
+        'needs_drip_off' => 0,
+        'drip_off_setup_pricing_item_id' => 'old_setup_charge',
+    ]);
+
+    $this->post('/estimate-sandbox', $payload)->assertOk();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_drip_off' => 1,
+        'drip_off_setup_pricing_item_id' => '',
+    ]))->assertSessionHasErrors([
+        'drip_off_setup_pricing_item_id',
+    ]);
+});
+
+test('estimate sandbox rejects invalid drip off setup option', function () {
+    [$paperItem, $interestItem] = seedSandboxPricingItems();
+
+    $this->post('/estimate-sandbox', validSandboxPayload($paperItem, $interestItem, [
+        'needs_drip_off' => 1,
+        'drip_off_setup_pricing_item_id' => 'old_setup_charge',
+    ]))->assertSessionHasErrors([
+        'drip_off_setup_pricing_item_id',
+    ]);
 });
 
 test('estimate sandbox validates missing back side lamination for both sides mode', function () {
@@ -1516,6 +1560,7 @@ function validSandboxPayload(PricingItem $paperItem, PricingItem $interestItem, 
         'needs_lamination' => 0,
         'needs_spot_uv' => 0,
         'needs_drip_off' => 0,
+        'drip_off_setup_pricing_item_id' => null,
         'needs_pasting' => '0',
         'pasting_sides' => null,
         'needs_pasting_checking' => '0',
@@ -1865,13 +1910,23 @@ function seedSandboxPricingItems(): array
         'is_active' => true,
     ]);
 
-    PricingItem::create([
+    $newJobWithPasting = PricingItem::create([
         'pricing_category_id' => $dripOffCategory->id,
-        'name' => 'Drip Off Setup Charge',
-        'slug' => 'drip-off-setup-charge',
-        'rate' => '1300.0000',
+        'name' => 'New Job with Pasting',
+        'slug' => 'drip-off-new-job-with-pasting',
+        'rate' => '1600.0000',
         'rate_type' => 'flat',
-        'is_selectable' => false,
+        'is_selectable' => true,
+        'is_active' => true,
+    ]);
+
+    $repeatJobWithPasting = PricingItem::create([
+        'pricing_category_id' => $dripOffCategory->id,
+        'name' => 'Repeat Job with Pasting',
+        'slug' => 'drip-off-repeat-job-with-pasting',
+        'rate' => '300.0000',
+        'rate_type' => 'flat',
+        'is_selectable' => true,
         'is_active' => true,
     ]);
 
@@ -1940,5 +1995,16 @@ function seedSandboxPricingItems(): array
         'is_active' => true,
     ]);
 
-    return [$paperItem, $interestItem, $standardPunching, $complicatedPunching, $bopp, $matte, $spotUv, $raisedUv];
+    return [
+        $paperItem,
+        $interestItem,
+        $standardPunching,
+        $complicatedPunching,
+        $bopp,
+        $matte,
+        $spotUv,
+        $raisedUv,
+        $newJobWithPasting,
+        $repeatJobWithPasting,
+    ];
 }

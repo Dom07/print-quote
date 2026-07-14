@@ -13,26 +13,31 @@ class DripOffCalculator
         $this->rounder ??= new EstimateRounder;
     }
 
-    public function calculate(float $length, float $width, int $quantity): array
-    {
+    public function calculate(
+        float $length,
+        float $width,
+        int $quantity,
+        float $flatAddOnAmount,
+        string $flatAddOnName,
+    ): array {
         if ($quantity === 0) {
             throw new InvalidArgumentException('No. of sheets to process must be greater than 0 for Drip Off.');
         }
 
         $coefficient = $this->rateFor('drip-off-coefficient');
         $minimumCost = $this->rateFor('drip-off-minimum-charge');
-        $flatAddOnAmount = $this->rateFor('drip-off-setup-charge');
 
         $baseRatePerSheet = $this->rounder->money(($length * $width * $coefficient) / 100);
         $baseCost = $this->rounder->money($baseRatePerSheet * $quantity);
         $minimumAdjustedBaseCost = $this->rounder->money(max($minimumCost, $baseCost)); // this is only for display...
-        $minimumAdjustedBaseRatePerSheet = $baseCost >= $minimumCost 
-            ? $baseRatePerSheet 
+        $minimumAdjustedBaseRatePerSheet = $baseCost >= $minimumCost
+            ? $baseRatePerSheet
             : ($minimumCost / $quantity);
         $flatAddOnRatePerSheet = $this->rounder->money($flatAddOnAmount / $quantity);
         $finalRatePerSheet = $this->rounder->money($minimumAdjustedBaseRatePerSheet + $flatAddOnRatePerSheet);
 
         return [
+            'flat_add_on_name' => $flatAddOnName,
             'coefficient' => $coefficient,
             'minimum_cost' => $this->rounder->money($minimumCost),
             'flat_add_on_amount' => $this->rounder->money($flatAddOnAmount),

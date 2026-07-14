@@ -11,42 +11,70 @@ uses(TestCase::class, RefreshDatabase::class);
 test('it calculates drip off rate when base cost exceeds minimum', function () {
     seedDripOffCalculatorItems();
 
-    $result = (new DripOffCalculator)->calculate(length: 20, width: 30, quantity: 1000);
+    $result = (new DripOffCalculator)->calculate(
+        length: 20,
+        width: 30,
+        quantity: 1000,
+        flatAddOnAmount: 1600,
+        flatAddOnName: 'New Job with Pasting',
+    );
 
-    expect($result['base_rate_per_sheet'])->toBe(4.5)
+    expect($result['flat_add_on_name'])->toBe('New Job with Pasting')
+        ->and($result['base_rate_per_sheet'])->toBe(4.5)
         ->and($result['base_cost'])->toBe(4500.0)
         ->and($result['minimum_adjusted_base_cost'])->toBe(4500.0)
         ->and($result['minimum_adjusted_base_rate_per_sheet'])->toBe(4.5)
-        ->and($result['flat_add_on_rate_per_sheet'])->toBe(1.3)
-        ->and($result['final_rate_per_sheet'])->toBe(5.8);
+        ->and($result['flat_add_on_amount'])->toBe(1600.0)
+        ->and($result['flat_add_on_rate_per_sheet'])->toBe(1.6)
+        ->and($result['final_rate_per_sheet'])->toBe(6.1);
 });
 
 test('it calculates drip off rate when minimum cost applies', function () {
     seedDripOffCalculatorItems();
 
-    $result = (new DripOffCalculator)->calculate(length: 10, width: 10, quantity: 1000);
+    $result = (new DripOffCalculator)->calculate(
+        length: 10,
+        width: 10,
+        quantity: 1000,
+        flatAddOnAmount: 300,
+        flatAddOnName: 'Repeat Job with Pasting',
+    );
 
-    expect($result['base_rate_per_sheet'])->toBe(0.75)
+    expect($result['flat_add_on_name'])->toBe('Repeat Job with Pasting')
+        ->and($result['base_rate_per_sheet'])->toBe(0.75)
         ->and($result['base_cost'])->toBe(750.0)
         ->and($result['minimum_adjusted_base_cost'])->toBe(2500.0)
         ->and($result['minimum_adjusted_base_rate_per_sheet'])->toBe(2.5)
-        ->and($result['flat_add_on_rate_per_sheet'])->toBe(1.3)
-        ->and($result['final_rate_per_sheet'])->toBe(3.8);
+        ->and($result['flat_add_on_amount'])->toBe(300.0)
+        ->and($result['flat_add_on_rate_per_sheet'])->toBe(0.3)
+        ->and($result['final_rate_per_sheet'])->toBe(2.8);
 });
 
 test('it divides flat add on amount by quantity', function () {
     seedDripOffCalculatorItems();
 
-    $result = (new DripOffCalculator)->calculate(length: 20, width: 30, quantity: 2000);
+    $result = (new DripOffCalculator)->calculate(
+        length: 20,
+        width: 30,
+        quantity: 2000,
+        flatAddOnAmount: 1600,
+        flatAddOnName: 'New Job with Pasting',
+    );
 
-    expect($result['flat_add_on_rate_per_sheet'])->toBe(0.65)
-        ->and($result['final_rate_per_sheet'])->toBe(5.15);
+    expect($result['flat_add_on_rate_per_sheet'])->toBe(0.8)
+        ->and($result['final_rate_per_sheet'])->toBe(5.3);
 });
 
 test('it rejects zero quantity', function () {
     seedDripOffCalculatorItems();
 
-    (new DripOffCalculator)->calculate(length: 20, width: 30, quantity: 0);
+    (new DripOffCalculator)->calculate(
+        length: 20,
+        width: 30,
+        quantity: 0,
+        flatAddOnAmount: 1600,
+        flatAddOnName: 'New Job with Pasting',
+    );
 })->throws(InvalidArgumentException::class);
 
 function seedDripOffCalculatorItems(): void
@@ -79,11 +107,21 @@ function seedDripOffCalculatorItems(): void
 
     PricingItem::create([
         'pricing_category_id' => $category->id,
-        'name' => 'Drip Off Setup Charge',
-        'slug' => 'drip-off-setup-charge',
-        'rate' => '1300.0000',
+        'name' => 'New Job with Pasting',
+        'slug' => 'drip-off-new-job-with-pasting',
+        'rate' => '1600.0000',
         'rate_type' => 'flat',
-        'is_selectable' => false,
+        'is_selectable' => true,
+        'is_active' => true,
+    ]);
+
+    PricingItem::create([
+        'pricing_category_id' => $category->id,
+        'name' => 'Repeat Job with Pasting',
+        'slug' => 'drip-off-repeat-job-with-pasting',
+        'rate' => '300.0000',
+        'rate_type' => 'flat',
+        'is_selectable' => true,
         'is_active' => true,
     ]);
 }

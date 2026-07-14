@@ -24,11 +24,13 @@
         $selectedFrontLaminationItem = $selectedFrontLaminationItem ?? null;
         $selectedBackLaminationItem = $selectedBackLaminationItem ?? null;
         $selectedSpotUvItem = $selectedSpotUvItem ?? null;
+        $selectedDripOffSetupItem = $selectedDripOffSetupItem ?? null;
         $paperOptions = $paperOptions ?? collect();
         $interestOptions = $interestOptions ?? collect();
         $punchingOptions = $punchingOptions ?? collect();
         $laminationOptions = $laminationOptions ?? collect();
         $spotUvOptions = $spotUvOptions ?? collect();
+        $dripOffSetupOptions = $dripOffSetupOptions ?? collect();
 
         $fieldValue = fn (string $field) => old($field, $input[$field] ?? '');
         $formatKg = fn (?float $value) => $value === null ? '-' : number_format($value, 2);
@@ -412,13 +414,30 @@
                                             </div>
                                             <label class="addon-card__checkbox" for="needs_drip_off">
                                                 <input type="hidden" name="needs_drip_off" value="0">
-                                                <input class="form-check-input" id="needs_drip_off" name="needs_drip_off" type="checkbox" value="1" @checked($needsDripOff)>
+                                                <input class="form-check-input" id="needs_drip_off" name="needs_drip_off" type="checkbox" value="1" data-needs-drip-off @checked($needsDripOff)>
                                                 <span>Apply Drip Off</span>
                                             </label>
                                         </div>
                                         @error('needs_drip_off')
                                             <p class="form-error">{{ $message }}</p>
                                         @enderror
+
+                                        <div class="addon-card__body {{ $needsDripOff ? '' : 'is-hidden' }}" data-drip-off-details>
+                                            <div class="form-group">
+                                                <label class="form-label" for="drip_off_setup_pricing_item_id">Drip Off Setup Option</label>
+                                                <select class="form-input" id="drip_off_setup_pricing_item_id" name="drip_off_setup_pricing_item_id">
+                                                    <option value="">Select setup option</option>
+                                                    @foreach ($dripOffSetupOptions as $dripOffSetupOption)
+                                                        <option value="{{ $dripOffSetupOption->id }}" @selected((string) $fieldValue('drip_off_setup_pricing_item_id') === (string) $dripOffSetupOption->id)>
+                                                            {{ $dripOffSetupOption->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                @error('drip_off_setup_pricing_item_id')
+                                                    <p class="form-error">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+                                        </div>
                                     </section>
 
                                 </div>
@@ -834,6 +853,11 @@
                                 </div>
                             @else
                                 <div class="result-item">
+                                    <span class="result-label">Setup Option</span>
+                                    <span class="result-value">{{ $dripOffResult['flat_add_on_name'] ?? $selectedDripOffSetupItem?->name ?? '-' }}</span>
+                                </div>
+
+                                <div class="result-item">
                                     <span class="result-label">Coefficient</span>
                                     <span class="result-value">{{ $formatDecimal($dripOffResult['coefficient'] ?? null) }}</span>
                                 </div>
@@ -1076,6 +1100,8 @@
         const laminationBackSide = document.querySelectorAll('[data-lamination-back-side]');
         const needsSpotUv = document.querySelector('[data-needs-spot-uv]');
         const spotUvDetails = document.querySelectorAll('[data-spot-uv-details]');
+        const needsDripOff = document.querySelector('[data-needs-drip-off]');
+        const dripOffDetails = document.querySelectorAll('[data-drip-off-details]');
         const needsPasting = document.querySelector('[data-needs-pasting]');
         const pastingDetails = document.querySelectorAll('[data-pasting-details]');
         const punchCostJobType = document.querySelector('[data-punch-cost-job-type]');
@@ -1105,6 +1131,10 @@
             toggle(spotUvDetails, needsSpotUv?.checked === true);
         };
 
+        const syncDripOff = () => {
+            toggle(dripOffDetails, needsDripOff?.checked === true);
+        };
+
         const syncPasting = () => {
             toggle(pastingDetails, needsPasting?.checked === true);
         };
@@ -1127,6 +1157,7 @@
         needsLamination?.addEventListener('change', syncLamination);
         laminationMode?.addEventListener('change', syncLamination);
         needsSpotUv?.addEventListener('change', syncSpotUv);
+        needsDripOff?.addEventListener('change', syncDripOff);
         needsPasting?.addEventListener('change', syncPasting);
         punchCostJobType?.addEventListener('change', syncNewJobPunchCost);
         measurementUnits.forEach((unit) => {
@@ -1138,6 +1169,7 @@
         syncPunching();
         syncLamination();
         syncSpotUv();
+        syncDripOff();
         syncPasting();
         syncNewJobPunchCost();
         syncMeasurementUnit();

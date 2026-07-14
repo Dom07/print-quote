@@ -30,6 +30,7 @@ class EstimateSandboxController extends Controller
             'punchingOptions' => $this->pricingOptions('punching'),
             'laminationOptions' => $this->pricingOptions('lamination', ['BOPP Lamination', 'Matte Lamination']),
             'spotUvOptions' => $this->pricingOptions('spot-uv', ['Spot UV', 'Raised UV']),
+            'dripOffSetupOptions' => $this->pricingOptions('drip-off', ['New Job with Pasting', 'Repeat Job with Pasting']),
         ]);
     }
 
@@ -100,6 +101,9 @@ class EstimateSandboxController extends Controller
         $selectedSpotUvItem = $needsSpotUv && isset($validated['spot_uv_pricing_item_id'])
             ? PricingItem::findOrFail($validated['spot_uv_pricing_item_id'])
             : null;
+        $selectedDripOffSetupItem = $needsDripOff && isset($validated['drip_off_setup_pricing_item_id'])
+            ? PricingItem::findOrFail($validated['drip_off_setup_pricing_item_id'])
+            : null;
         $paperPricingResult = array_merge($pricingCalculator->calculate(
             selectedPaperRate: $effectivePaperRate,
             interestPercentage: (float) $selectedInterestItem->rate,
@@ -137,6 +141,8 @@ class EstimateSandboxController extends Controller
                 length: $lengthInInches,
                 width: $widthInInches,
                 quantity: (int) $validated['no_of_sheets_to_process'],
+                flatAddOnAmount: (float) $selectedDripOffSetupItem->rate,
+                flatAddOnName: $selectedDripOffSetupItem->name,
             )
             : null;
         $pastingResult = $needsPasting
@@ -180,6 +186,7 @@ class EstimateSandboxController extends Controller
             'punchingOptions' => $this->pricingOptions('punching'),
             'laminationOptions' => $this->pricingOptions('lamination', ['BOPP Lamination', 'Matte Lamination']),
             'spotUvOptions' => $this->pricingOptions('spot-uv', ['Spot UV', 'Raised UV']),
+            'dripOffSetupOptions' => $this->pricingOptions('drip-off', ['New Job with Pasting', 'Repeat Job with Pasting']),
             'result' => $kgResult,
             'paperPricingResult' => $paperPricingResult,
             'selectedPaperItem' => $selectedPaperItem,
@@ -188,6 +195,7 @@ class EstimateSandboxController extends Controller
             'selectedFrontLaminationItem' => $selectedFrontLaminationItem,
             'selectedBackLaminationItem' => $selectedBackLaminationItem,
             'selectedSpotUvItem' => $selectedSpotUvItem,
+            'selectedDripOffSetupItem' => $selectedDripOffSetupItem,
             'punchingRateResult' => $punchingRateResult,
             'laminationResult' => $laminationResult,
             'spotUvResult' => $spotUvResult,
