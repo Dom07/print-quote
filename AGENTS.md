@@ -24,12 +24,66 @@ These rules capture the working conventions established while building the print
 
 ## Estimate Sandbox
 
-- The sandbox is temporary and must not save estimates, inputs, totals, or cost components.
+- The existing sandbox/calculation flow must not save estimates, inputs, totals, or cost components unless a task explicitly wires persistence into it.
+- Persistence services and supporting infrastructure may be created when explicitly requested, but creating that infrastructure does not mean the sandbox/form should start writing records.
 - The sandbox may show debug/tallying values while calculation flows are being confirmed.
 - Keep KG debug values separate from pricing results.
 - Do not use Filament for the sandbox or custom estimate screens.
 - Do not change confirmed formulas unless the task explicitly asks for it.
 - Employee-facing dropdowns should show choices only, not hidden rates or pricing values.
+
+## Estimate Persistence
+
+- Estimate persistence is being introduced incrementally alongside the existing live calculator.
+- The current live workflow is still calculation-only: users enter inputs, the app reads current pricing/configuration, services calculate the estimate, results display, and no estimate is saved.
+- Do not wire persistence into the live estimate form until the task explicitly requires it.
+- Do not alter confirmed calculation behavior while implementing persistence unless explicitly requested.
+- Existing persistence tables are `estimates`, `estimate_inputs`, `estimate_cost_components`, and `estimate_totals`.
+- Do not create replacement tables or alternate persistence schemas without explicit instruction.
+- The intended `estimates` persistence structure includes `quote_number`, `status`, `title`, `notes`, `quoted_at`, and timestamps.
+- Customer and authenticated-user ownership are not implemented yet. Do not assume or introduce `customer_id`, `created_by`, user ownership, or authentication requirements unless a future task explicitly adds them.
+- Future customer/user relationships should be added through new additive migrations, initially nullable where necessary so existing saved estimates remain valid.
+- Live pricing configuration is stored in `pricing_categories`, `pricing_items`, and `pricing_rules`.
+- Saved estimate cost components must snapshot the actual historical values used for that estimate, including concepts such as name, unit, rate, original rate, rate type, override state, calculation note, and override note.
+- Do not reconstruct an old quote by looking up current pricing rates.
+- Do not add `pricing_item_id` or `pricing_rule_id` dependencies to saved cost components unless a future explicit requirement changes this architecture.
+- `estimate_inputs` stores the inputs needed to reconstruct/reopen an estimate, including structured fields plus `raw_inputs` JSON. Do not arbitrarily expand or redesign this structure unless asked.
+- `estimate_totals` stores calculated totals associated with the saved estimate. Keep calculation formulas in calculation services/code, not persistence models or database tables.
+- Established estimate model relationships are `Estimate::input()`, `Estimate::costComponents()`, `Estimate::totals()`, and inverse `estimate()` relationships on `EstimateInput`, `EstimateCostComponent`, and `EstimateTotal`.
+- Do not add customer/user/pricing relationships to estimate persistence models unless explicitly requested.
+- The project model mass-assignment convention is `protected $guarded = [];`; preserve it rather than introducing a competing approach.
+
+## Quote Numbers
+
+- Quote-number generation lives in `App\Services\Estimates\QuoteNumberGenerator`.
+- Quote format is `Q-000001`: prefix `Q-`, sequential numeric portion, zero-padded to 6 digits.
+- Quote numbers are generated only when a new estimate is created.
+- Editing an existing estimate must preserve its existing quote number.
+- Do not generate quote numbers during ordinary calculation/display.
+- Do not derive the displayed quote number directly from the estimate database ID.
+- The generator does not itself create estimates.
+- The generator uses database locking intended to be used inside the future estimate-create transaction.
+- The database unique constraint remains final uniqueness protection.
+- Do not duplicate quote-number generation logic elsewhere.
+
+## Production Safety
+
+- The application is live and regularly used.
+- Never use `migrate:fresh`, `migrate:refresh`, destructive resets, or reseeding against the live application as part of normal feature work.
+- Do not edit previously-run migrations to alter production schema.
+- Make production schema changes with new additive migrations.
+- Preserve existing data.
+- Do not perform broad database changes unless explicitly required.
+
+## Current Estimate Persistence Checkpoint
+
+- Complete: estimate persistence schema alignment.
+- Complete: Eloquent persistence models and relationships.
+- Complete: quote-number generator with focused tests.
+- Next planned persistence step: create a focused service for saving a brand-new estimate from already-calculated data.
+- The upcoming create/save flow is expected to happen inside one database transaction: generate quote number, create estimate, save estimate inputs, save historical cost component snapshots, and save estimate totals.
+- The next step should initially cover new estimate creation only.
+- Do not assume the next step includes editing existing estimates, reopening estimates, controllers, routes, UI save buttons, estimate listing, customer integration, authentication, or full status-transition workflows.
 
 ## Naming
 

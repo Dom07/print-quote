@@ -22,6 +22,11 @@ class EstimateInput extends Model
     protected function casts(): array
     {
         return [
+            'pieces_per_sheet' => 'integer',
+            'production_sheets' => 'integer',
+            'wastage_sheets' => 'integer',
+            'total_sheets_with_wastage' => 'integer',
+            'sheets_used_for_process' => 'integer',
             'raw_inputs' => 'array',
         ];
     }

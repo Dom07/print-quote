@@ -21,11 +21,6 @@ class PricingItem extends Model
         return $this->hasMany(PricingRule::class);
     }
 
-    public function estimateCostComponents(): HasMany
-    {
-        return $this->hasMany(EstimateCostComponent::class);
-    }
-
     /**
      * Get the attributes that should be cast.
      *

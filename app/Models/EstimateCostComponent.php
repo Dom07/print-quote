@@ -15,11 +15,6 @@ class EstimateCostComponent extends Model
         return $this->belongsTo(Estimate::class);
     }
 
-    public function pricingItem(): BelongsTo
-    {
-        return $this->belongsTo(PricingItem::class);
-    }
-
     /**
      * Get the attributes that should be cast.
      *
